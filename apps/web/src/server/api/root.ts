@@ -15,6 +15,7 @@ import { limitsRouter } from "./routers/limits";
 import { waitlistRouter } from "./routers/waitlist";
 import { feedbackRouter } from "./routers/feedback";
 import { webhookRouter } from "./routers/webhook";
+import { adminPlansRouter } from "./routers/admin-plans";
 
 /**
  * This is the primary router for your server.
@@ -27,6 +28,7 @@ export const appRouter = createTRPCRouter({
   email: emailRouter,
   team: teamRouter,
   admin: adminRouter,
+  adminPlans: adminPlansRouter,
   contacts: contactsRouter,
   campaign: campaignRouter,
   template: templateRouter,

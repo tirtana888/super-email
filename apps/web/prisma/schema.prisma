@@ -124,7 +124,28 @@ model Team {
   invites          TeamInvite[]
   suppressionList  SuppressionList[]
   webhookEndpoints Webhook[]
+  billingPlanId    String?
+  billingPlan      BillingPlan?      @relation(fields: [billingPlanId], references: [id])
   webhookCalls     WebhookCall[]
+}
+
+model BillingPlan {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String?
+  priceIdr        Int
+  intervalMonths  Int      @default(1)
+  emailQuota      Int      @default(10000)
+  domainLimit     Int      @default(1)
+  teamMemberLimit Int      @default(3)
+  features        String[]
+  isPopular       Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  teams           Team[]
 }
 
 model TeamInvite {

@@ -9,6 +9,7 @@ import { useTeam } from "~/providers/team-context";
 import { api } from "~/trpc/react";
 import { PlanDetails } from "~/components/payments/PlanDetails";
 import { UpgradeButton } from "~/components/payments/UpgradeButton";
+import { DynamicPricingCards } from "~/components/payments/DynamicPricingCards";
 
 export default function SettingsPage() {
   const { currentTeam, currentIsAdmin } = useTeam();
@@ -46,10 +47,35 @@ export default function SettingsPage() {
     }
   };
 
-  const paymentMethod =
-    subscription?.paymentMethod && subscription.paymentMethod !== "null"
-      ? JSON.parse(subscription.paymentMethod)
-      : {};
+  let paymentMethodDisplay: React.ReactNode = "No Payment Method";
+  if (subscription?.paymentMethod && subscription.paymentMethod !== "null") {
+    try {
+      if (subscription.paymentMethod.startsWith("{")) {
+        const pm = JSON.parse(subscription.paymentMethod);
+        paymentMethodDisplay = (
+          <>
+            <span>💳</span>
+            <span className="capitalize">
+              {pm?.card?.brand || ""} •••• {pm?.card?.last4 || ""}
+            </span>
+            {pm?.card && (
+              <span className="text-sm text-muted-foreground lowercase">
+                (Expires: {pm.card.exp_month}/{pm.card.exp_year})
+              </span>
+            )}
+          </>
+        );
+      } else {
+        paymentMethodDisplay = (
+          <span className="font-semibold text-primary">
+            {subscription.paymentMethod}
+          </span>
+        );
+      }
+    } catch {
+      paymentMethodDisplay = subscription.paymentMethod;
+    }
+  }
 
   if (!currentIsAdmin) {
     return null;
@@ -85,6 +111,9 @@ export default function SettingsPage() {
           )}
         </div>
       </Card>
+
+      <DynamicPricingCards />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
         <Card className="p-6">
           <div>
@@ -92,24 +121,7 @@ export default function SettingsPage() {
             {subscription ? (
               <div className="mt-2">
                 <div className="text-lg font-mono uppercase flex items-center gap-2">
-                  {subscription.paymentMethod &&
-                  subscription.paymentMethod !== "null" ? (
-                    <>
-                      <span>💳</span>
-                      <span className="capitalize">
-                        {paymentMethod?.card?.brand || ""} ••••{" "}
-                        {paymentMethod?.card?.last4 || ""}
-                      </span>
-                      {paymentMethod?.card && (
-                        <span className="text-sm text-muted-foreground lowercase">
-                          (Expires: {paymentMethod.card.exp_month}/
-                          {paymentMethod.card.exp_year})
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    "No Payment Method"
-                  )}
+                  {paymentMethodDisplay}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
                   Next billing date:{" "}

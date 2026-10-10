@@ -11,6 +11,7 @@ type Team = {
   updatedAt: Date;
   plan: "FREE" | "BASIC";
   stripeCustomerId?: string | null;
+  billingPlanId?: string | null;
   billingEmail?: string | null;
 };
 

@@ -14,10 +14,30 @@ import {
   createCheckoutSessionForTeam,
   getManageSessionUrl,
 } from "~/server/billing/payments";
+import { createXenditInvoice } from "~/server/billing/xendit";
 import { db } from "~/server/db";
 import { TeamService } from "~/server/service/team-service";
 
 export const billingRouter = createTRPCRouter({
+  getAvailablePlans: teamProcedure.query(async () => {
+    return await db.billingPlan.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { priceIdr: "asc" }],
+    });
+  }),
+
+  createXenditCheckoutSession: teamAdminProcedure
+    .input(z.object({ planId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const invoice = await createXenditInvoice({
+        teamId: ctx.team.id,
+        planId: input.planId,
+        userEmail: ctx.session.user.email ?? "",
+      });
+
+      return invoice.invoice_url;
+    }),
+
   createCheckoutSession: teamAdminProcedure.mutation(async ({ ctx }) => {
     return (await createCheckoutSessionForTeam(ctx.team.id)).url;
   }),
