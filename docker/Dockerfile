@@ -78,5 +78,6 @@ RUN ln -s /app/node_modules/prisma/build/index.js ./node_modules/.bin/prisma
 ENV SKIP_ENV_VALIDATION="false"
 
 COPY  ./docker/start.sh ./start.sh
+RUN sed -i 's/\r$//' ./start.sh && chmod +x ./start.sh
 
 CMD ["sh", "start.sh"]
