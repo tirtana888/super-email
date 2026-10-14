@@ -190,7 +190,10 @@ export const authOptions: NextAuthOptions = {
         id: user.id,
         isBetaUser: user.isBetaUser,
         isAdmin: user.email === env.ADMIN_EMAIL,
-        isWaitlisted: user.isWaitlisted,
+        isWaitlisted:
+          user.email === env.ADMIN_EMAIL || user.email === env.FOUNDER_EMAIL
+            ? false
+            : user.isWaitlisted,
       },
     }),
   },
@@ -260,14 +263,19 @@ export const authOptions: NextAuthOptions = {
         invitesAvailable = invites.length > 0;
       }
 
+      const isSystemAdmin =
+        (env.ADMIN_EMAIL && user.email === env.ADMIN_EMAIL) ||
+        (env.FOUNDER_EMAIL && user.email === env.FOUNDER_EMAIL);
+
       if (
+        isSystemAdmin ||
         !env.NEXT_PUBLIC_IS_CLOUD ||
         env.NODE_ENV === "development" ||
         invitesAvailable
       ) {
         await db.user.update({
           where: { id: user.id },
-          data: { isBetaUser: true },
+          data: { isBetaUser: true, isWaitlisted: false },
         });
       } else {
         await db.user.update({

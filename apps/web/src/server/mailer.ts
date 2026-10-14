@@ -153,6 +153,42 @@ export async function sendMail(
       );
     }
   } else {
-    throw new Error("USESEND_API_KEY/UNSEND_API_KEY not found");
+    // Fallback to sending through available database domain if configured
+    const team = await db.team.findFirst({});
+    if (team) {
+      const domains = await getDomains(team.id);
+      if (domains.length > 0 && domains[0]) {
+        const availableDomains = domains.map((d) => d.name);
+        const domain = domains[0];
+        const candidateFroms = [fromOverride, env.FROM_EMAIL, `hello@${domain.name}`].filter(
+          (value): value is string => Boolean(value)
+        );
+        const selectedFrom =
+          candidateFroms.find((address) => {
+            const domainPart = address.split("@")[1];
+            return domainPart ? availableDomains.includes(domainPart) : false;
+          }) ?? `hello@${domain.name}`;
+
+        try {
+          await sendEmail({
+            teamId: team.id,
+            to: email,
+            from: selectedFrom,
+            subject,
+            text,
+            html,
+            replyTo,
+          });
+          return;
+        } catch (err) {
+          logger.warn({ err }, "Failed to send email via self-hosted domain fallback");
+        }
+      }
+    }
+
+    logger.warn(
+      { to: email, subject },
+      "USESEND_API_KEY/UNSEND_API_KEY is not set and no verified domain is available yet. Skipping external notification email."
+    );
   }
 }

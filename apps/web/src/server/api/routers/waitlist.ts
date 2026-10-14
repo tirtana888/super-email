@@ -88,7 +88,11 @@ export const waitlistRouter = createTRPCRouter({
         <p style="white-space: pre-wrap;">${escapedDescription}</p>
       `;
 
-      await sendMail(founderEmail, subject, textBody, htmlBody, user.email ?? undefined);
+      try {
+        await sendMail(founderEmail, subject, textBody, htmlBody, user.email ?? undefined);
+      } catch (err) {
+        logger.warn({ err }, "Could not send waitlist notification email");
+      }
 
       logger.info(
         {
