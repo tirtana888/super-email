@@ -183,19 +183,24 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     signIn: async ({ user, account }) =>
       canRegisterSelfHostedUser(user.email, account),
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-        isBetaUser: user.isBetaUser,
-        isAdmin: user.email === env.ADMIN_EMAIL,
-        isWaitlisted:
-          user.email === env.ADMIN_EMAIL || user.email === env.FOUNDER_EMAIL
-            ? false
-            : user.isWaitlisted,
-      },
-    }),
+    session: ({ session, user }) => {
+      const email = user.email?.toLowerCase();
+      const isAdminOrFounder =
+        (!!env.ADMIN_EMAIL && email === env.ADMIN_EMAIL.toLowerCase()) ||
+        (!!env.FOUNDER_EMAIL && email === env.FOUNDER_EMAIL.toLowerCase());
+
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: user.id,
+          isBetaUser: user.isBetaUser,
+          isAdmin:
+            !!env.ADMIN_EMAIL && email === env.ADMIN_EMAIL.toLowerCase(),
+          isWaitlisted: isAdminOrFounder ? false : user.isWaitlisted,
+        },
+      };
+    },
   },
   adapter: (() => {
     const prismaAdapter = PrismaAdapter(db);
@@ -263,9 +268,10 @@ export const authOptions: NextAuthOptions = {
         invitesAvailable = invites.length > 0;
       }
 
+      const email = user.email?.toLowerCase();
       const isSystemAdmin =
-        (env.ADMIN_EMAIL && user.email === env.ADMIN_EMAIL) ||
-        (env.FOUNDER_EMAIL && user.email === env.FOUNDER_EMAIL);
+        (env.ADMIN_EMAIL && email === env.ADMIN_EMAIL.toLowerCase()) ||
+        (env.FOUNDER_EMAIL && email === env.FOUNDER_EMAIL.toLowerCase());
 
       if (
         isSystemAdmin ||
