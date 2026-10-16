@@ -117,7 +117,7 @@ export const authedProcedure = t.procedure.use(({ ctx, next }) => {
  * @see https://trpc.io/docs/procedures
  */
 export const protectedProcedure = authedProcedure.use(({ ctx, next }) => {
-  if (ctx.session.user.isWaitlisted) {
+  if (env.NEXT_PUBLIC_IS_CLOUD && ctx.session.user.isWaitlisted) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
 
