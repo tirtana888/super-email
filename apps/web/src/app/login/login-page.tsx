@@ -61,6 +61,11 @@ const providerSvgs = {
 
 const PROVIDER_ORDER = ["google", "github"];
 
+const PROVIDER_NAMES: Record<string, string> = {
+  google: "Google",
+  github: "GitHub",
+};
+
 const providerButtonClass =
   "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm font-medium text-white transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60";
 
@@ -87,8 +92,17 @@ export default function LoginPage({
   });
 
   async function onEmailSubmit(values: z.infer<typeof emailSchema>) {
-    setEmailStatus("sending");
     emailForm.clearErrors("email");
+
+    if (!emailAvailable) {
+      emailForm.setError("email", {
+        type: "server",
+        message: "Email sign-in isn't available yet.",
+      });
+      return;
+    }
+
+    setEmailStatus("sending");
 
     try {
       const result = await signIn("email", {
@@ -139,14 +153,13 @@ export default function LoginPage({
   const emailProvider = providers?.find(
     (provider) => provider.type === "email",
   );
+  const emailAvailable = !providers || !!emailProvider;
 
-  const socialProviders = (providers ?? [])
-    .filter((provider) => provider.type !== "email")
-    .sort(
-      (a, b) =>
-        (PROVIDER_ORDER.indexOf(a.id) + 1 || 99) -
-        (PROVIDER_ORDER.indexOf(b.id) + 1 || 99),
-    );
+  const socialProviders = PROVIDER_ORDER.map((id) => ({
+    id,
+    name: PROVIDER_NAMES[id] ?? id,
+    available: !providers || providers.some((provider) => provider.id === id),
+  }));
 
   const [submittedProvider, setSubmittedProvider] =
     useState<LiteralUnion<BuiltInProviderType> | null>(null);
@@ -155,7 +168,20 @@ export default function LoginPage({
   const inviteId = searchParams.get("inviteId");
   const authErrorMessage = getAuthErrorMessage(searchParams.get("error"));
 
-  const handleSubmit = (provider: LiteralUnion<BuiltInProviderType>) => {
+  const [unavailableNotice, setUnavailableNotice] = useState<string | null>(
+    null,
+  );
+
+  const handleSubmit = (
+    provider: LiteralUnion<BuiltInProviderType>,
+    available: boolean,
+    name: string,
+  ) => {
+    if (!available) {
+      setUnavailableNotice(`${name} sign-in isn't available yet.`);
+      return;
+    }
+    setUnavailableNotice(null);
     setSubmittedProvider(provider);
     const callbackUrl = inviteId
       ? `/join-team?inviteId=${inviteId}`
@@ -205,6 +231,15 @@ export default function LoginPage({
             </p>
           ) : null}
 
+          {unavailableNotice ? (
+            <p
+              role="status"
+              className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-center text-sm text-zinc-300"
+            >
+              {unavailableNotice}
+            </p>
+          ) : null}
+
           {socialProviders.length > 0 && (
             <div
               className={
@@ -219,7 +254,7 @@ export default function LoginPage({
                   type="button"
                   className={providerButtonClass}
                   disabled={submittedProvider !== null}
-                  onClick={() => handleSubmit(provider.id)}
+                  onClick={() => handleSubmit(provider.id, provider.available, provider.name)}
                 >
                   {submittedProvider === provider.id ? (
                     <Spinner className="h-4 w-4" />
@@ -234,7 +269,7 @@ export default function LoginPage({
             </div>
           )}
 
-          {emailProvider && socialProviders.length > 0 && (
+          {socialProviders.length > 0 && (
             <div className="flex items-center gap-4">
               <div className="h-px flex-1 bg-white/10" />
               <span className="text-xs uppercase tracking-wider text-zinc-500">
@@ -244,8 +279,7 @@ export default function LoginPage({
             </div>
           )}
 
-          {emailProvider &&
-            (emailStatus === "success" ? (
+          {(emailStatus === "success" ? (
               <div className="flex flex-col gap-5">
                 <p className="text-center text-sm text-zinc-400">
                   We sent a sign-in link and code to{" "}
