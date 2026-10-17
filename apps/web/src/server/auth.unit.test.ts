@@ -235,6 +235,31 @@ describe("authOptions", () => {
       expect(mocks.transaction).not.toHaveBeenCalled();
     });
 
+    it("lowercases the email when creating a cloud user", async () => {
+      mocks.baseCreateUser.mockResolvedValue({ ...newUser, id: 1 });
+
+      await createUser({ ...newUser, email: "  New.User@Example.COM " });
+
+      expect(mocks.baseCreateUser).toHaveBeenCalledWith({
+        ...newUser,
+        email: "new.user@example.com",
+      });
+    });
+
+    it("looks up users by email without case sensitivity", async () => {
+      const getUserByEmail = authOptions.adapter?.getUserByEmail;
+      mocks.userFindFirst.mockResolvedValue({ ...newUser, id: 7 });
+
+      await expect(getUserByEmail?.("New@Example.com")).resolves.toMatchObject({
+        id: 7,
+      });
+
+      expect(mocks.userFindFirst).toHaveBeenCalledWith({
+        where: { email: { equals: "new@example.com", mode: "insensitive" } },
+        orderBy: [{ isWaitlisted: "asc" }, { id: "asc" }],
+      });
+    });
+
     it("atomically creates the first self-hosted user", async () => {
       mocks.env.NEXT_PUBLIC_IS_CLOUD = false;
 

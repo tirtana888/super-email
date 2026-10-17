@@ -28,6 +28,10 @@ const GITHUB_OAUTH_ISSUER = "https://github.com/login/oauth";
  */
 const SELF_HOSTED_REGISTRATION_LOCK_ID = 1431520590;
 
+function normalizeEmail(email?: string | null) {
+  return email?.trim().toLowerCase();
+}
+
 export class SelfHostedRegistrationError extends Error {
   constructor() {
     super("A team invitation is required to create an account");
@@ -207,7 +211,22 @@ export const authOptions: NextAuthOptions = {
 
     return {
       ...prismaAdapter,
-      async createUser(user: AdapterUser) {
+      async getUserByEmail(email: string) {
+        const normalizedEmail = normalizeEmail(email);
+
+        if (!normalizedEmail) {
+          return null;
+        }
+
+        // Prefer an approved account, then the oldest, if legacy rows differ only by case.
+        return db.user.findFirst({
+          where: { email: { equals: normalizedEmail, mode: "insensitive" } },
+          orderBy: [{ isWaitlisted: "asc" }, { id: "asc" }],
+        }) as Promise<AdapterUser | null>;
+      },
+      async createUser(rawUser: AdapterUser) {
+        const user = { ...rawUser, email: normalizeEmail(rawUser.email) ?? rawUser.email };
+
         if (env.NEXT_PUBLIC_IS_CLOUD) {
           if (!prismaAdapter.createUser) {
             throw new Error("Prisma adapter does not support user creation");

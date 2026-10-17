@@ -137,8 +137,9 @@ export const adminRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      const user = await db.user.findUnique({
-        where: { email: input.email },
+      const user = await db.user.findFirst({
+        where: { email: { equals: input.email, mode: "insensitive" } },
+        orderBy: [{ isWaitlisted: "desc" }, { id: "asc" }],
         select: waitlistUserSelection,
       });
 
