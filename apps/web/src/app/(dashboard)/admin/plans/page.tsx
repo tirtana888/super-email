@@ -27,6 +27,21 @@ import {
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import { api } from "~/trpc/react";
 
+const LIMIT_FIELDS = [
+  { key: "emailQuota", label: "Kuota Email / bln" },
+  { key: "emailsPerDay", label: "Email / hari" },
+  { key: "domainLimit", label: "Limit Domain" },
+  { key: "teamMemberLimit", label: "Limit Member" },
+  { key: "contactBookLimit", label: "Limit Contact Book" },
+  { key: "webhookLimit", label: "Limit Webhook" },
+] as const;
+
+function formatLimit(value: number, unit: string) {
+  return value === -1
+    ? "Tanpa batas"
+    : `${value.toLocaleString("id-ID")} ${unit}`;
+}
+
 interface PlanFormData {
   id?: string;
   name: string;
@@ -35,8 +50,12 @@ interface PlanFormData {
   priceIdr: number;
   intervalMonths: number;
   emailQuota: number;
+  emailsPerDay: number;
   domainLimit: number;
   teamMemberLimit: number;
+  contactBookLimit: number;
+  webhookLimit: number;
+  isDefault?: boolean;
   featuresText: string;
   isPopular: boolean;
   isActive: boolean;
@@ -50,8 +69,11 @@ const initialForm: PlanFormData = {
   priceIdr: 99000,
   intervalMonths: 1,
   emailQuota: 10000,
+  emailsPerDay: 334,
   domainLimit: 1,
   teamMemberLimit: 3,
+  contactBookLimit: -1,
+  webhookLimit: -1,
   featuresText: "Dukungan Email 24/7\nDedicated Tracking Domain\nStatistik Real-time",
   isPopular: false,
   isActive: true,
@@ -111,8 +133,12 @@ export default function AdminPlansPage() {
       priceIdr: plan.priceIdr,
       intervalMonths: plan.intervalMonths,
       emailQuota: plan.emailQuota,
+      emailsPerDay: plan.emailsPerDay,
       domainLimit: plan.domainLimit,
       teamMemberLimit: plan.teamMemberLimit,
+      contactBookLimit: plan.contactBookLimit,
+      webhookLimit: plan.webhookLimit,
+      isDefault: plan.isDefault,
       featuresText: plan.features.join("\n"),
       isPopular: plan.isPopular,
       isActive: plan.isActive,
@@ -135,8 +161,11 @@ export default function AdminPlansPage() {
       priceIdr: Number(formData.priceIdr),
       intervalMonths: Number(formData.intervalMonths),
       emailQuota: Number(formData.emailQuota),
+      emailsPerDay: Number(formData.emailsPerDay),
       domainLimit: Number(formData.domainLimit),
       teamMemberLimit: Number(formData.teamMemberLimit),
+      contactBookLimit: Number(formData.contactBookLimit),
+      webhookLimit: Number(formData.webhookLimit),
       features,
       isPopular: formData.isPopular,
       isActive: formData.isActive,
@@ -185,6 +214,7 @@ export default function AdminPlansPage() {
                 <TableHead>Nama Paket</TableHead>
                 <TableHead>Harga (IDR)</TableHead>
                 <TableHead>Kuota Email</TableHead>
+                <TableHead>Email / Hari</TableHead>
                 <TableHead>Limit Domain</TableHead>
                 <TableHead>Member Tim</TableHead>
                 <TableHead>Tim Aktif</TableHead>
@@ -201,6 +231,11 @@ export default function AdminPlansPage() {
                       <div className="flex flex-col">
                         <span className="font-medium flex items-center gap-2">
                           {plan.name}
+                          {plan.isDefault && (
+                            <Badge variant="secondary" className="text-xs">
+                              Default
+                            </Badge>
+                          )}
                           {plan.isPopular && (
                             <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-500 border-amber-500/20">
                               Populer
@@ -219,9 +254,10 @@ export default function AdminPlansPage() {
                         / {plan.intervalMonths} bln
                       </span>
                     </TableCell>
-                    <TableCell>{plan.emailQuota.toLocaleString("id-ID")} email</TableCell>
-                    <TableCell>{plan.domainLimit} domain</TableCell>
-                    <TableCell>{plan.teamMemberLimit} member</TableCell>
+                    <TableCell>{formatLimit(plan.emailQuota, "email")}</TableCell>
+                    <TableCell>{formatLimit(plan.emailsPerDay, "email")}</TableCell>
+                    <TableCell>{formatLimit(plan.domainLimit, "domain")}</TableCell>
+                    <TableCell>{formatLimit(plan.teamMemberLimit, "member")}</TableCell>
                     <TableCell>{plan._count?.teams ?? 0} tim</TableCell>
                     <TableCell>
                       {plan.isActive ? (
@@ -239,25 +275,27 @@ export default function AdminPlansPage() {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-500 hover:text-red-600"
-                          onClick={() => {
-                            if (confirm(`Yakin ingin menghapus / menonaktifkan paket "${plan.name}"?`)) {
-                              deleteMutation.mutate({ id: plan.id });
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {!plan.isDefault && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-600"
+                            onClick={() => {
+                              if (confirm(`Yakin ingin menghapus / menonaktifkan paket "${plan.name}"?`)) {
+                                deleteMutation.mutate({ id: plan.id });
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                     Belum ada paket yang dibuat. Klik tombol &quot;Tambah Paket&quot; untuk membuat paket pertama.
                   </TableCell>
                 </TableRow>
@@ -302,6 +340,7 @@ export default function AdminPlansPage() {
                   id="plan-slug"
                   placeholder="e.g. starter, pro"
                   value={formData.slug}
+                  disabled={formData.isDefault}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, slug: e.target.value }))
                   }
@@ -319,6 +358,7 @@ export default function AdminPlansPage() {
                   min="0"
                   step="1000"
                   value={formData.priceIdr}
+                  disabled={formData.isDefault}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -348,57 +388,28 @@ export default function AdminPlansPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="plan-quota">Kuota Email / bln</Label>
-                <Input
-                  id="plan-quota"
-                  type="number"
-                  min="0"
-                  value={formData.emailQuota}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      emailQuota: Number(e.target.value),
-                    }))
-                  }
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="plan-domain">Limit Domain</Label>
-                <Input
-                  id="plan-domain"
-                  type="number"
-                  min="1"
-                  value={formData.domainLimit}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      domainLimit: Number(e.target.value),
-                    }))
-                  }
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="plan-members">Limit Member</Label>
-                <Input
-                  id="plan-members"
-                  type="number"
-                  min="1"
-                  value={formData.teamMemberLimit}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      teamMemberLimit: Number(e.target.value),
-                    }))
-                  }
-                  required
-                />
-              </div>
+              {LIMIT_FIELDS.map(({ key, label }) => (
+                <div className="space-y-1" key={key}>
+                  <Label htmlFor={`plan-${key}`}>{label}</Label>
+                  <Input
+                    id={`plan-${key}`}
+                    type="number"
+                    min="-1"
+                    value={formData[key]}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        [key]: Number(e.target.value),
+                      }))
+                    }
+                    required
+                  />
+                </div>
+              ))}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Isi -1 untuk tanpa batas. Batas ini berlaku untuk semua tim yang memakai paket ini.
+            </p>
 
             <div className="space-y-1">
               <Label htmlFor="plan-features">

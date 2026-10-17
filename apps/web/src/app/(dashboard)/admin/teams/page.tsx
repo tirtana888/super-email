@@ -8,6 +8,7 @@ import { Button } from "@usesend/ui/src/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -46,7 +47,7 @@ type TeamAdmin = NonNullable<RouterOutputs["admin"]["findTeam"]>;
 
 const updateSchema = z.object({
   apiRateLimit: z.coerce.number().int().min(1).max(10_000),
-  dailyEmailLimit: z.coerce.number().int().min(0).max(10_000_000),
+  dailyEmailLimit: z.number().int().min(0).max(10_000_000).nullable(),
   isBlocked: z.boolean(),
   plan: z.enum(["FREE", "BASIC"]),
 });
@@ -66,7 +67,7 @@ export default function AdminTeamsPage() {
     resolver: zodResolver(updateSchema),
     defaultValues: {
       apiRateLimit: 1,
-      dailyEmailLimit: 0,
+      dailyEmailLimit: null,
       isBlocked: false,
       plan: "FREE",
     },
@@ -280,20 +281,30 @@ export default function AdminTeamsPage() {
                   name="dailyEmailLimit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Daily email limit</FormLabel>
+                      <FormLabel>Daily email limit (override)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={0}
                           max={10_000_000}
-                          {...field}
-                          value={Number.isNaN(field.value) ? 0 : field.value}
+                          placeholder="Follows the team's plan"
+                          name={field.name}
+                          ref={field.ref}
+                          onBlur={field.onBlur}
+                          value={field.value ?? ""}
                           onChange={(event) =>
-                            field.onChange(Number(event.target.value))
+                            field.onChange(
+                              event.target.value === ""
+                                ? null
+                                : Number(event.target.value),
+                            )
                           }
                           disabled={updateTeam.isPending}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Leave empty to use the daily limit of the team's plan.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

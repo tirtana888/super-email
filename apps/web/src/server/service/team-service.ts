@@ -7,6 +7,7 @@ import type { Prisma, Team, TeamInvite } from "@prisma/client";
 import { UnsendApiError } from "../public-api/api-error";
 import { getRedis, redisKey } from "~/server/redis";
 import { LimitReason } from "~/lib/constants/plans";
+import { PlanService } from "./plan-service";
 import { LimitService } from "./limit-service";
 import { renderUsageLimitReachedEmail } from "../email-templates/UsageLimitReachedEmail";
 import { renderUsageWarningEmail } from "../email-templates/UsageWarningEmail";
@@ -81,9 +82,12 @@ export class TeamService {
       }
     }
 
+    const defaultPlan = await PlanService.getDefaultPlan();
+
     const created = await db.team.create({
       data: {
         name,
+        billingPlanId: defaultPlan?.id,
         teamUsers: {
           create: {
             userId,

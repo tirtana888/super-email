@@ -388,7 +388,8 @@ export const adminRouter = createTRPCRouter({
       z.object({
         teamId: z.number(),
         apiRateLimit: z.number().int().min(1).max(10_000),
-        dailyEmailLimit: z.number().int().min(0).max(10_000_000),
+        // null removes the override so the team follows its plan
+        dailyEmailLimit: z.number().int().min(0).max(10_000_000).nullable(),
         isBlocked: z.boolean(),
         plan: z.enum(["FREE", "BASIC"]),
       }),

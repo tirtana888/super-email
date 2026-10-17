@@ -21,7 +21,7 @@ import { TeamService } from "~/server/service/team-service";
 export const billingRouter = createTRPCRouter({
   getAvailablePlans: teamProcedure.query(async () => {
     return await db.billingPlan.findMany({
-      where: { isActive: true },
+      where: { isActive: true, isDefault: false },
       orderBy: [{ sortOrder: "asc" }, { priceIdr: "asc" }],
     });
   }),

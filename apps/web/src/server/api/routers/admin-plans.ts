@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, adminProcedure } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { TRPCError } from "@trpc/server";
+import { PlanService } from "~/server/service/plan-service";
 
 export const billingPlanInputSchema = z.object({
   name: z.string().min(1, "Nama paket harus diisi"),
@@ -9,9 +10,13 @@ export const billingPlanInputSchema = z.object({
   description: z.string().optional(),
   priceIdr: z.number().int().min(0, "Harga minimal 0"),
   intervalMonths: z.number().int().min(1).default(1),
-  emailQuota: z.number().int().min(0).default(10000),
-  domainLimit: z.number().int().min(1).default(1),
-  teamMemberLimit: z.number().int().min(1).default(3),
+  // For every limit below, -1 means unlimited.
+  emailQuota: z.number().int().min(-1).default(10000),
+  emailsPerDay: z.number().int().min(-1).default(-1),
+  domainLimit: z.number().int().min(-1).default(1),
+  teamMemberLimit: z.number().int().min(-1).default(3),
+  contactBookLimit: z.number().int().min(-1).default(-1),
+  webhookLimit: z.number().int().min(-1).default(-1),
   features: z.array(z.string()).default([]),
   isPopular: z.boolean().default(false),
   isActive: z.boolean().default(true),
@@ -44,9 +49,11 @@ export const adminPlansRouter = createTRPCRouter({
         });
       }
 
-      return await db.billingPlan.create({
-        data: input,
+      const created = await db.billingPlan.create({
+        data: { ...input, isDefault: false },
       });
+      await PlanService.invalidatePlanCache(created.id);
+      return created;
     }),
 
   update: adminProcedure
@@ -57,6 +64,22 @@ export const adminPlansRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
+
+      const current = await db.billingPlan.findUnique({ where: { id } });
+
+      if (!current) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Paket tidak ditemukan",
+        });
+      }
+
+      if (current.isDefault) {
+        // The default (Free) plan stays free, active and keeps its slug.
+        data.slug = current.slug;
+        data.priceIdr = 0;
+        data.isActive = true;
+      }
 
       const existingSlug = await db.billingPlan.findFirst({
         where: {
@@ -72,10 +95,12 @@ export const adminPlansRouter = createTRPCRouter({
         });
       }
 
-      return await db.billingPlan.update({
+      const updated = await db.billingPlan.update({
         where: { id },
         data,
       });
+      await PlanService.invalidatePlanCache(id);
+      return updated;
     }),
 
   delete: adminProcedure
@@ -97,16 +122,27 @@ export const adminPlansRouter = createTRPCRouter({
         });
       }
 
-      if (plan._count.teams > 0) {
-        // Soft-delete by disabling if active teams are using it
-        return await db.billingPlan.update({
-          where: { id: input.id },
-          data: { isActive: false },
+      if (plan.isDefault) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Paket default (Free) tidak bisa dihapus atau dinonaktifkan",
         });
       }
 
-      return await db.billingPlan.delete({
+      if (plan._count.teams > 0) {
+        // Soft-delete by disabling if active teams are using it
+        const disabled = await db.billingPlan.update({
+          where: { id: input.id },
+          data: { isActive: false },
+        });
+        await PlanService.invalidatePlanCache(input.id);
+        return disabled;
+      }
+
+      const deleted = await db.billingPlan.delete({
         where: { id: input.id },
       });
+      await PlanService.invalidatePlanCache(input.id);
+      return deleted;
     }),
 });

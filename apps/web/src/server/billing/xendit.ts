@@ -1,6 +1,7 @@
 import { env } from "~/env";
 import { db } from "~/server/db";
 import { logger } from "~/server/logger/log";
+import { TeamService } from "~/server/service/team-service";
 
 interface CreateInvoiceParams {
   teamId: number;
@@ -48,6 +49,10 @@ export async function createXenditInvoice({
 
   if (!plan.isActive) {
     throw new Error("Paket ini sedang tidak aktif.");
+  }
+
+  if (plan.isDefault || plan.priceIdr <= 0) {
+    throw new Error("Paket gratis tidak perlu dibayar.");
   }
 
   const externalId = `sub_${teamId}_${plan.id}_${Date.now()}`;
@@ -148,17 +153,15 @@ export async function processXenditInvoicePaid(payload: XenditWebhookPayload) {
     currentPeriodStart.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
   );
 
-  // Perbarui status team dan kuota email harian berdasarkan paket
-  const dailyLimit = Math.max(Math.floor(plan.emailQuota / 30), 100);
-
+  // Batas email mengikuti paket (billingPlanId), jadi tidak ada batas harian per team yang ditulis di sini
   await db.team.update({
     where: { id: teamId },
     data: {
       billingPlanId: plan.id,
       isActive: true,
-      dailyEmailLimit: dailyLimit,
     },
   });
+  await TeamService.refreshTeamCache(teamId);
 
   // Upsert subscription
   const paymentMethodName =
