@@ -8,13 +8,14 @@ import Spinner from "@usesend/ui/src/spinner";
 import { toast } from "@usesend/ui/src/toaster";
 import { CheckCircle2, QrCode } from "lucide-react";
 import { api } from "~/trpc/react";
-import { useTeam } from "~/providers/team-context";
+import { describePlanLimits, formatIdr } from "~/lib/plan-format";
 
 export function DynamicPricingCards() {
-  const { currentTeam } = useTeam();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   const { data: plans, isLoading } = api.billing.getAvailablePlans.useQuery();
+  const { data: overview } = api.billing.getPlanOverview.useQuery();
+  const currentPlanId = overview?.plan?.id ?? null;
   const checkoutMutation = api.billing.createXenditCheckoutSession.useMutation({
     onSuccess: (url) => {
       if (url) {
@@ -30,14 +31,6 @@ export function DynamicPricingCards() {
   const handleSelectPlan = (planId: string) => {
     setSelectedPlanId(planId);
     checkoutMutation.mutate({ planId });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount);
   };
 
   if (isLoading) {
@@ -63,7 +56,7 @@ export function DynamicPricingCards() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
         {plans.map((plan) => {
-          const isCurrent = currentTeam?.billingPlanId === plan.id;
+          const isCurrent = currentPlanId === plan.id;
           const isProcessing = selectedPlanId === plan.id && checkoutMutation.isPending;
 
           return (
@@ -89,11 +82,13 @@ export function DynamicPricingCards() {
                 </CardTitle>
                 <div className="mt-3">
                   <span className="text-3xl font-extrabold tracking-tight">
-                    {formatCurrency(plan.priceIdr)}
+                    {plan.isDefault ? "Gratis" : formatIdr(plan.priceIdr)}
                   </span>
-                  <span className="text-xs text-muted-foreground ml-1">
-                    / {plan.intervalMonths === 1 ? "bulan" : `${plan.intervalMonths} bulan`}
-                  </span>
+                  {plan.isDefault ? null : (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      / {plan.intervalMonths === 1 ? "bulan" : `${plan.intervalMonths} bulan`}
+                    </span>
+                  )}
                 </div>
                 {plan.description && (
                   <p className="text-xs text-muted-foreground mt-2">{plan.description}</p>
@@ -102,18 +97,19 @@ export function DynamicPricingCards() {
 
               <CardContent className="space-y-4">
                 <div className="rounded-lg bg-muted/50 p-3 space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Kuota Email:</span>
-                    <span className="font-semibold">{plan.emailQuota.toLocaleString("id-ID")} / bln</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Domain Pengirim:</span>
-                    <span className="font-semibold">{plan.domainLimit} Domain</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Member Tim:</span>
-                    <span className="font-semibold">{plan.teamMemberLimit} Member</span>
-                  </div>
+                  {describePlanLimits({
+                    emailsPerMonth: plan.emailQuota,
+                    emailsPerDay: plan.emailsPerDay,
+                    domains: plan.domainLimit,
+                    teamMembers: plan.teamMemberLimit,
+                    contactBooks: plan.contactBookLimit,
+                    webhooks: plan.webhookLimit,
+                  }).map((row) => (
+                    <div key={row.label} className="flex justify-between">
+                      <span className="text-muted-foreground">{row.label}:</span>
+                      <span className="font-semibold">{row.value}</span>
+                    </div>
+                  ))}
                 </div>
 
                 <ul className="space-y-2 pt-2 text-xs">
@@ -130,13 +126,21 @@ export function DynamicPricingCards() {
                 <Button
                   className="w-full flex items-center justify-center gap-2"
                   variant={plan.isPopular ? "default" : "outline"}
-                  disabled={isCurrent || checkoutMutation.isPending}
+                  disabled={
+                    plan.isDefault || checkoutMutation.isPending
+                  }
                   onClick={() => handleSelectPlan(plan.id)}
                 >
                   {isProcessing ? (
                     <Spinner className="h-4 w-4" />
+                  ) : plan.isDefault ? (
+                    isCurrent
+                      ? "Paket Aktif Saat Ini"
+                      : "Otomatis saat paket berakhir"
                   ) : isCurrent ? (
-                    "Paket Aktif Saat Ini"
+                    <>
+                      <QrCode className="h-4 w-4" /> Perpanjang Paket
+                    </>
                   ) : (
                     <>
                       <QrCode className="h-4 w-4" /> Bayar via QRIS / VA

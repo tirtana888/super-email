@@ -16,22 +16,31 @@ import { PlanDetails } from "~/components/payments/PlanDetails";
 import { UpgradeButton } from "~/components/payments/UpgradeButton";
 import { Progress } from "@usesend/ui/src/progress";
 
-const FREE_PLAN_LIMIT = 3000;
+function formatLimit(limit: number) {
+  return limit === -1 ? "Unlimited" : limit.toLocaleString();
+}
 
-function FreePlanUsage({
+function percentUsed(used: number, limit: number) {
+  return limit > 0 ? (used / limit) * 100 : 0;
+}
+
+function PlanUsage({
   usage,
   dayUsage,
+  monthlyLimit,
+  dailyLimit,
 }: {
   usage: { type: EmailUsageType; sent: number }[];
   dayUsage: { type: EmailUsageType; sent: number }[];
+  monthlyLimit: number;
+  dailyLimit: number;
 }) {
-  const DAILY_LIMIT = 100;
   const totalSent = usage?.reduce((acc, item) => acc + item.sent, 0) || 0;
-  const monthlyPercentageUsed = (totalSent / FREE_PLAN_LIMIT) * 100;
+  const monthlyPercentageUsed = percentUsed(totalSent, monthlyLimit);
 
   // Calculate daily usage - this is a simplified version, you might want to adjust based on actual daily tracking
   const dailyUsage = dayUsage?.reduce((acc, item) => acc + item.sent, 0) || 0;
-  const dailyPercentageUsed = (dailyUsage / DAILY_LIMIT) * 100;
+  const dailyPercentageUsed = percentUsed(dailyUsage, dailyLimit);
 
   return (
     <Card className="p-6">
@@ -74,8 +83,7 @@ function FreePlanUsage({
                 <div className="flex justify-between items-center">
                   <div className="">Monthly Limit</div>
                   <div className="font-mono font-medium">
-                    {totalSent.toLocaleString()}/
-                    {FREE_PLAN_LIMIT.toLocaleString()}
+                    {totalSent.toLocaleString()}/{formatLimit(monthlyLimit)}
                   </div>
                 </div>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -94,7 +102,7 @@ function FreePlanUsage({
                 <div className="flex justify-between items-center">
                   <div className="">Daily Limit</div>
                   <div className="font-mono">
-                    {dailyUsage.toLocaleString()}/{DAILY_LIMIT.toLocaleString()}
+                    {dailyUsage.toLocaleString()}/{formatLimit(dailyLimit)}
                   </div>
                 </div>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -195,6 +203,7 @@ export default function UsagePage() {
   const { currentTeam } = useTeam();
 
   const { data: subscription } = api.billing.getSubscriptionDetails.useQuery();
+  const { data: overview } = api.billing.getPlanOverview.useQuery();
 
   // Calculate the billing period based on subscription if available
   const today = new Date();
@@ -223,20 +232,22 @@ export default function UsagePage() {
           <Card className="p-6 text-center text-muted-foreground">
             No usage data available
           </Card>
-        ) : currentTeam?.plan === "FREE" ? (
-          <FreePlanUsage
+        ) : overview?.kind === "legacy" ? (
+          <PaidPlanUsage usage={usage?.month ?? []} />
+        ) : overview ? (
+          <PlanUsage
             usage={usage?.month ?? []}
             dayUsage={usage?.day ?? []}
+            monthlyLimit={overview.limits.emailsPerMonth}
+            dailyLimit={overview.limits.emailsPerDay}
           />
-        ) : (
-          <PaidPlanUsage usage={usage?.month ?? []} />
-        )}
+        ) : null}
       </div>
       {currentTeam?.plan ? (
         <Card className=" rounded-xl mt-10 p-4 px-8">
           <PlanDetails />
           <div className="mt-4">
-            {currentTeam?.plan === "FREE" ? <UpgradeButton /> : null}
+            {overview?.state === "free" ? <UpgradeButton /> : null}
           </div>
         </Card>
       ) : null}

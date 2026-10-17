@@ -4,6 +4,7 @@ export const CONTACT_BULK_ADD_QUEUE = "contact-bulk-add";
 export const CAMPAIGN_BATCH_QUEUE = "campaign-batch";
 export const CAMPAIGN_SCHEDULER_QUEUE = "campaign-scheduler";
 export const DOMAIN_VERIFICATION_QUEUE = "domain-verification";
+export const PLAN_LIFECYCLE_QUEUE = "plan-lifecycle";
 export const WEBHOOK_DISPATCH_QUEUE = "webhook-dispatch";
 export const WEBHOOK_CLEANUP_QUEUE = "webhook-cleanup";
 

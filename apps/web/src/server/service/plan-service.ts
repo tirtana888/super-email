@@ -1,4 +1,4 @@
-import type { BillingPlan, Team } from "@prisma/client";
+import type { BillingPlan, Subscription, Team } from "@prisma/client";
 import { PLAN_LIMITS } from "~/lib/constants/plans";
 import {
   resolvePlanLimits,
@@ -29,6 +29,16 @@ export class PlanService {
       () => db.billingPlan.findUnique({ where: { id: planId } }),
       { ttlSeconds: PLAN_CACHE_TTL_SECONDS },
     );
+  }
+
+  /** The latest payment decides which plan and period are current. */
+  static async getCurrentSubscription(
+    teamId: number,
+  ): Promise<Subscription | null> {
+    return db.subscription.findFirst({
+      where: { teamId },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   static async invalidatePlanCache(planId?: string) {

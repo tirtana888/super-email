@@ -1,4 +1,5 @@
 import { initDomainVerificationJob } from "~/server/jobs/domain-verification-job";
+import { initPlanLifecycleJob } from "~/server/jobs/plan-lifecycle-job";
 import { isCloud, isEmailCleanupEnabled } from "~/utils/common";
 
 let initialized = false;
@@ -27,6 +28,13 @@ export async function register() {
 
     if (process.env.REDIS_URL) {
       await initDomainVerificationJob();
+
+      /**
+       * Expiry reminders and the move back to the Free plan after the grace period
+       */
+      if (isCloud()) {
+        await initPlanLifecycleJob();
+      }
     }
 
     if (isEmailCleanupEnabled()) {

@@ -24,7 +24,7 @@ export async function getThisMonthUsage(teamId: number) {
   if (isPaidPlan) {
     subscription = await db.subscription.findFirst({
       where: { teamId: team.id },
-      orderBy: { status: "asc" },
+      orderBy: { createdAt: "desc" },
     });
   }
 

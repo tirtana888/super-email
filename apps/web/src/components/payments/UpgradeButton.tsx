@@ -1,24 +1,23 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { Button } from "@usesend/ui/src/button";
-import Spinner from "@usesend/ui/src/spinner";
-import { api } from "~/trpc/react";
+import { useUpgradeModalStore } from "~/store/upgradeModalStore";
 
 export const UpgradeButton = () => {
-  const checkoutMutation = api.billing.createCheckoutSession.useMutation();
+  const router = useRouter();
+  const {
+    action: { closeModal },
+  } = useUpgradeModalStore();
 
-  const onClick = async () => {
-    const url = await checkoutMutation.mutateAsync();
-    if (url) {
-      window.location.href = url;
-    }
+  const onClick = () => {
+    closeModal();
+    router.push("/settings/billing");
   };
 
   return (
-    <Button
-      onClick={onClick}
-      className="mt-4 w-[120px]"
-      disabled={checkoutMutation.isPending}
-    >
-      {checkoutMutation.isPending ? <Spinner className="w-4 h-4" /> : "Upgrade"}
+    <Button onClick={onClick} className="mt-4">
+      Lihat paket
     </Button>
   );
 };

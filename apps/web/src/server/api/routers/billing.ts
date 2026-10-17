@@ -17,13 +17,63 @@ import {
 import { createXenditInvoice } from "~/server/billing/xendit";
 import { db } from "~/server/db";
 import { TeamService } from "~/server/service/team-service";
+import { PlanService } from "~/server/service/plan-service";
+import { getGraceEnd, getPeriodState } from "~/lib/plan-lifecycle";
 
 export const billingRouter = createTRPCRouter({
   getAvailablePlans: teamProcedure.query(async () => {
     return await db.billingPlan.findMany({
-      where: { isActive: true, isDefault: false },
+      where: { isActive: true },
       orderBy: [{ sortOrder: "asc" }, { priceIdr: "asc" }],
     });
+  }),
+
+  getPlanOverview: teamProcedure.query(async ({ ctx }) => {
+    const team = ctx.team;
+
+    const [ownPlan, defaultPlan, limits, subscription] = await Promise.all([
+      team.billingPlanId ? PlanService.getPlan(team.billingPlanId) : null,
+      PlanService.getDefaultPlan(),
+      PlanService.getLimitsForTeam(team),
+      PlanService.getCurrentSubscription(team.id),
+    ]);
+
+    // Inactive teams are treated as being on the default plan, same as the limit checks.
+    const plan = team.isActive && ownPlan ? ownPlan : defaultPlan;
+    const isLegacy = !ownPlan && team.plan === "BASIC";
+    const onPaidPlan = Boolean(plan && !plan.isDefault);
+
+    const periodEnd = onPaidPlan
+      ? (subscription?.currentPeriodEnd ?? null)
+      : null;
+    const periodState = periodEnd ? getPeriodState(periodEnd, new Date()) : null;
+
+    return {
+      kind: isLegacy ? ("legacy" as const) : ("plan" as const),
+      state: !onPaidPlan
+        ? ("free" as const)
+        : periodState === null || periodState === "active"
+          ? ("active" as const)
+          : periodState,
+      plan: plan
+        ? {
+            id: plan.id,
+            name: plan.name,
+            priceIdr: plan.priceIdr,
+            intervalMonths: plan.intervalMonths,
+            isDefault: plan.isDefault,
+            features: plan.features,
+          }
+        : null,
+      limits: {
+        ...limits,
+        // An admin-set team limit overrides the plan's daily limit
+        emailsPerDay: team.dailyEmailLimit ?? limits.emailsPerDay,
+      },
+      periodStart: onPaidPlan ? (subscription?.currentPeriodStart ?? null) : null,
+      periodEnd,
+      graceEnd: periodEnd ? getGraceEnd(periodEnd) : null,
+    };
   }),
 
   createXenditCheckoutSession: teamAdminProcedure
@@ -53,7 +103,7 @@ export const billingRouter = createTRPCRouter({
   getSubscriptionDetails: teamProcedure.query(async ({ ctx }) => {
     const subscription = await db.subscription.findFirst({
       where: { teamId: ctx.team.id },
-      orderBy: { status: "asc" },
+      orderBy: { createdAt: "desc" },
     });
 
     return subscription;

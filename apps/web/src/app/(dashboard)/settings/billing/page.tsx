@@ -8,12 +8,10 @@ import { format } from "date-fns";
 import { useTeam } from "~/providers/team-context";
 import { api } from "~/trpc/react";
 import { PlanDetails } from "~/components/payments/PlanDetails";
-import { UpgradeButton } from "~/components/payments/UpgradeButton";
 import { DynamicPricingCards } from "~/components/payments/DynamicPricingCards";
 
 export default function SettingsPage() {
   const { currentTeam, currentIsAdmin } = useTeam();
-  const manageSessionUrl = api.billing.getManageSessionUrl.useMutation();
   const updateBillingEmailMutation =
     api.billing.updateBillingEmail.useMutation();
 
@@ -25,11 +23,10 @@ export default function SettingsPage() {
 
   const apiUtils = api.useUtils();
 
-  const onManageClick = async () => {
-    const url = await manageSessionUrl.mutateAsync();
-    if (url) {
-      window.location.href = url;
-    }
+  const scrollToPlans = () => {
+    document
+      .getElementById("pricing-plans")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const handleEditEmail = () => {
@@ -94,25 +91,15 @@ export default function SettingsPage() {
       <Card className=" rounded-xl mt-10 p-8 px-8">
         <PlanDetails />
         <div className="mt-4">
-          {currentTeam?.plan !== "FREE" ? (
-            <Button
-              onClick={onManageClick}
-              className="mt-4 w-[120px]"
-              disabled={manageSessionUrl.isPending}
-            >
-              {manageSessionUrl.isPending ? (
-                <Spinner className="w-4 h-4" />
-              ) : (
-                "Manage"
-              )}
-            </Button>
-          ) : (
-            <UpgradeButton />
-          )}
+          <Button onClick={scrollToPlans} className="mt-4">
+            Lihat paket
+          </Button>
         </div>
       </Card>
 
-      <DynamicPricingCards />
+      <div id="pricing-plans">
+        <DynamicPricingCards />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
         <Card className="p-6">

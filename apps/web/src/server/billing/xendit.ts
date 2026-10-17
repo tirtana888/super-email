@@ -2,6 +2,8 @@ import { env } from "~/env";
 import { db } from "~/server/db";
 import { logger } from "~/server/logger/log";
 import { TeamService } from "~/server/service/team-service";
+import { PlanService } from "~/server/service/plan-service";
+import { calculateRenewalPeriod } from "~/lib/plan-lifecycle";
 
 interface CreateInvoiceParams {
   teamId: number;
@@ -147,47 +149,60 @@ export async function processXenditInvoicePaid(payload: XenditWebhookPayload) {
     throw new Error(`Plan dengan ID ${planId} tidak ditemukan`);
   }
 
-  const currentPeriodStart = new Date();
-  const daysToAdd = plan.intervalMonths * 30;
-  const currentPeriodEnd = new Date(
-    currentPeriodStart.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
-  );
-
-  // Batas email mengikuti paket (billingPlanId), jadi tidak ada batas harian per team yang ditulis di sini
-  await db.team.update({
-    where: { id: teamId },
-    data: {
-      billingPlanId: plan.id,
-      isActive: true,
-    },
+  // Xendit can deliver the same paid invoice more than once; each invoice may only count once.
+  const alreadyProcessed = await db.subscription.findUnique({
+    where: { id: payload.id },
+    select: { id: true },
   });
-  await TeamService.refreshTeamCache(teamId);
 
-  // Upsert subscription
+  if (alreadyProcessed) {
+    logger.info(
+      { teamId, invoiceId: payload.id },
+      "[Xendit Webhook] Invoice sudah diproses, dilewati",
+    );
+    return;
+  }
+
+  // Renewing the plan that is still running adds time on top of what is left.
+  const currentSubscription = await PlanService.getCurrentSubscription(teamId);
+  const renewsSamePlan = currentSubscription?.priceId === plan.id;
+
+  const { start: currentPeriodStart, end: currentPeriodEnd } =
+    calculateRenewalPeriod({
+      now: new Date(),
+      intervalMonths: plan.intervalMonths,
+      currentPeriodEnd: renewsSamePlan
+        ? currentSubscription?.currentPeriodEnd
+        : null,
+    });
+
   const paymentMethodName =
     payload.payment_channel || payload.payment_method || "XENDIT";
 
-  await db.subscription.upsert({
-    where: { id: payload.id },
-    update: {
-      status: "active",
-      currentPeriodStart,
-      currentPeriodEnd,
-      paymentMethod: paymentMethodName,
-      priceId: plan.id,
-      priceIds: [plan.id],
-    },
-    create: {
-      id: payload.id,
-      teamId: team.id,
-      status: "active",
-      priceId: plan.id,
-      priceIds: [plan.id],
-      currentPeriodStart,
-      currentPeriodEnd,
-      paymentMethod: paymentMethodName,
-    },
-  });
+  // The team's limits follow billingPlanId; team.plan is kept in sync for older code paths.
+  await db.$transaction([
+    db.team.update({
+      where: { id: teamId },
+      data: {
+        billingPlanId: plan.id,
+        plan: "BASIC",
+        isActive: true,
+      },
+    }),
+    db.subscription.create({
+      data: {
+        id: payload.id,
+        teamId: team.id,
+        status: "active",
+        priceId: plan.id,
+        priceIds: [plan.id],
+        currentPeriodStart,
+        currentPeriodEnd,
+        paymentMethod: paymentMethodName,
+      },
+    }),
+  ]);
+  await TeamService.refreshTeamCache(teamId);
 
   logger.info(
     { teamId, planName: plan.name, invoiceId: payload.id },
