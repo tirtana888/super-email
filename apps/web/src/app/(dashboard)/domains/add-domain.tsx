@@ -37,6 +37,7 @@ import {
 import { toast } from "@usesend/ui/src/toaster";
 import { useUpgradeModalStore } from "~/store/upgradeModalStore";
 import { LimitReason } from "~/lib/constants/plans";
+import { RegionLabel } from "~/components/RegionLabel";
 
 const domainSchema = z.object({
   region: z.string().optional(),
@@ -182,7 +183,7 @@ export default function AddDomain() {
                         <SelectContent>
                           {regionQuery.data?.map((region) => (
                             <SelectItem value={region} key={region}>
-                              {region}
+                              <RegionLabel region={region} />
                             </SelectItem>
                           ))}
                         </SelectContent>

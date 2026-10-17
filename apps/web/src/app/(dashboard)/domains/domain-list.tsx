@@ -9,6 +9,7 @@ import React from "react";
 import { StatusIndicator } from "./status-indicator";
 import { DomainStatusBadge } from "./domain-badge";
 import Spinner from "@usesend/ui/src/spinner";
+import { RegionLabel } from "~/components/RegionLabel";
 
 export default function DomainsList() {
   const domainsQuery = api.domain.domains.useQuery();
@@ -95,7 +96,9 @@ const DomainItem: React.FC<{ domain: Domain }> = ({ domain }) => {
             <div>
               <p className="text-sm text-muted-foreground">Region</p>
 
-              <p className="text-sm flex items-center gap-2">{domain.region}</p>
+              <div className="text-sm">
+                <RegionLabel region={domain.region} />
+              </div>
             </div>
           </div>
           <div className="flex flex-col gap-6">
