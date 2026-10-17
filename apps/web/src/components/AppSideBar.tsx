@@ -52,6 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@usesend/ui/src/dropdown-menu";
 import { FeedbackDialog } from "./FeedbackDialog";
+import { api } from "~/trpc/react";
 import { env } from "~/env";
 
 // General items
@@ -126,7 +127,12 @@ const settingsItems = [
 
 export function AppSidebar() {
   const { data: session } = useSession();
-  const showFeedback = isCloud();
+  // Feedback stays hidden until an admin turns it on, and while the flag is still loading.
+  const { data: publicFlags } = api.appSettings.getPublicFlags.useQuery(
+    undefined,
+    { enabled: isCloud(), staleTime: 60_000 },
+  );
+  const showFeedback = isCloud() && publicFlags?.feedbackEnabled === true;
 
   const pathname = usePathname();
 

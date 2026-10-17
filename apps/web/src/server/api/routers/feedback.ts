@@ -6,6 +6,8 @@ import { env } from "~/env";
 import { isCloud } from "~/utils/common";
 import { sendMail } from "~/server/mailer";
 import { toPlainHtml } from "~/server/utils/email-content";
+import { APP_SETTING_KEYS } from "~/lib/app-settings";
+import { AppSettingsService } from "~/server/service/app-settings-service";
 
 export const feedbackRouter = createTRPCRouter({
   send: teamProcedure
@@ -19,6 +21,18 @@ export const feedbackRouter = createTRPCRouter({
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Feedback is only available on the cloud version.",
+        });
+      }
+
+      // Hiding the button is not enough; the endpoint itself must refuse while the switch is off.
+      const feedbackEnabled = await AppSettingsService.isEnabled(
+        APP_SETTING_KEYS.FEEDBACK_ENABLED,
+      );
+
+      if (!feedbackEnabled) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Feedback is not available right now.",
         });
       }
 

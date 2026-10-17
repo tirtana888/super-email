@@ -12,6 +12,8 @@ import { UseSend } from "usesend-js";
 import { isCloud } from "~/utils/common";
 import { toPlainHtml } from "~/server/utils/email-content";
 import { sesRegionSchema } from "~/lib/zod/ses-setting-schema";
+import { APP_SETTING_KEYS } from "~/lib/app-settings";
+import { AppSettingsService } from "~/server/service/app-settings-service";
 
 const waitlistUserSelection = {
   id: true,
@@ -71,6 +73,25 @@ export const adminRouter = createTRPCRouter({
   getDefaultSesRegion: adminProcedure.query(() => env.AWS_DEFAULT_REGION),
 
   getWaitlistEnabled: adminProcedure.query(() => env.WAITLIST_ENABLED),
+
+  getFeatureFlags: adminProcedure.query(async () => {
+    return {
+      feedbackEnabled: await AppSettingsService.isEnabled(
+        APP_SETTING_KEYS.FEEDBACK_ENABLED,
+      ),
+    };
+  }),
+
+  setFeedbackEnabled: adminProcedure
+    .input(z.object({ enabled: z.boolean() }))
+    .mutation(async ({ input }) => {
+      await AppSettingsService.setEnabled(
+        APP_SETTING_KEYS.FEEDBACK_ENABLED,
+        input.enabled,
+      );
+
+      return { feedbackEnabled: input.enabled };
+    }),
 
   getQuotaForRegion: adminProcedure
     .input(
