@@ -27,6 +27,10 @@ import SendTestMail from "./send-test-mail";
 import { Button } from "@usesend/ui/src/button";
 import Link from "next/link";
 import { toast } from "@usesend/ui/src/toaster";
+import {
+  CLOUDFLARE_DNS_URL,
+  formatDnsRecordsForCopy,
+} from "~/lib/dns-provider";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "~/server/api/root";
 
@@ -49,6 +53,23 @@ export default function DomainItemPage({
       refetchIntervalInBackground: true,
     },
   );
+
+  const dnsProviderQuery = api.domain.getDnsProvider.useQuery(
+    { id: Number(domainId) },
+    { staleTime: 5 * 60 * 1000 },
+  );
+  const isCloudflare = dnsProviderQuery.data?.provider === "cloudflare";
+
+  const handleCopyAllRecords = async () => {
+    const records = domainQuery.data?.dnsRecords ?? [];
+
+    try {
+      await navigator.clipboard.writeText(formatDnsRecordsForCopy(records));
+      toast.success("All DNS records copied");
+    } catch {
+      toast.error("Could not copy. Copy the records one by one instead.");
+    }
+  };
 
   const verifyQuery = api.domain.startVerification.useMutation();
 
@@ -115,7 +136,39 @@ export default function DomainItemPage({
           </div>
 
           <div className=" border rounded-lg p-4 shadow">
-            <p className="font-semibold text-xl">DNS records</p>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="font-semibold text-xl">DNS records</p>
+                {isCloudflare ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    This domain uses Cloudflare. Open the DNS page, choose{" "}
+                    {dnsProviderQuery.data?.registrableDomain ?? "your domain"},
+                    then add the records below.
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyAllRecords}
+                  disabled={!domainQuery.data?.dnsRecords?.length}
+                >
+                  Copy all records
+                </Button>
+                {isCloudflare ? (
+                  <Button size="sm" asChild>
+                    <a
+                      href={CLOUDFLARE_DNS_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open Cloudflare DNS
+                    </a>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
             <Table className="mt-2">
               <TableHeader className="">
                 <TableRow className="">

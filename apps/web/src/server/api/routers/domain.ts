@@ -16,6 +16,7 @@ import {
 } from "~/server/service/domain-service";
 import { sendEmail } from "~/server/service/email-service";
 import { SesSettingsService } from "~/server/service/ses-settings-service";
+import { lookupDnsProvider } from "~/server/service/dns-provider-service";
 import {
   getValidSesRegions,
   sesRegionSchema,
@@ -51,6 +52,10 @@ export const domainRouter = createTRPCRouter({
 
   getDomain: domainProcedure.query(async ({ input, ctx }) => {
     return getDomain(input.id, ctx.team.id);
+  }),
+
+  getDnsProvider: domainProcedure.query(async ({ ctx }) => {
+    return lookupDnsProvider(ctx.domain.name);
   }),
 
   updateDomain: domainProcedure
