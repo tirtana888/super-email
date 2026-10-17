@@ -82,7 +82,7 @@ export async function addDomain(
   domain: string,
   region: string,
   sesTenantId?: string,
-  dkimSelector: string = "usesend"
+  dkimSelector: string = "f14"
 ) {
   const sesClient = getSesClient(region);
 

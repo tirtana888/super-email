@@ -270,10 +270,10 @@ async function sendDomainStatusNotification({
 
   const subject =
     domain.status === DomainStatus.SUCCESS
-      ? `useSend: ${domain.name} is verified`
+      ? `F14: ${domain.name} is verified`
       : previousStatus === DomainStatus.SUCCESS
-        ? `useSend: ${domain.name} verification status changed`
-        : `useSend: ${domain.name} verification failed`;
+        ? `F14: ${domain.name} verification status changed`
+        : `F14: ${domain.name} verification failed`;
 
   const domainUrl = `${env.NEXTAUTH_URL}/domains/${domain.id}`;
   const html = await renderDomainVerificationStatusEmail({
@@ -294,12 +294,12 @@ async function sendDomainStatusNotification({
     `Open domain settings: ${domainUrl}`,
     null,
     "Thanks,",
-    "useSend Team",
+    "F14 Team",
   ].filter((value): value is string => Boolean(value));
 
   await Promise.all(
     recipients.map((email) =>
-      sendMail(email, subject, textLines.join("\n"), html, "hey@usesend.com"),
+      sendMail(email, subject, textLines.join("\n"), html, "support@f14.dev"),
     ),
   );
 }
@@ -353,7 +353,7 @@ export async function validateDomainFromEmail(email: string, teamId: number) {
   if (!domain) {
     throw new UnsendApiError({
       code: "BAD_REQUEST",
-      message: `Domain: ${fromDomain} of from email is wrong. Use the domain verified by useSend`,
+      message: `Domain: ${fromDomain} of from email is wrong. Use the domain verified by F14`,
     });
   }
 
@@ -422,7 +422,7 @@ export async function createDomain(
   }
 
   const subdomain = tldts.getSubdomain(name);
-  const dkimSelector = "usesend";
+  const dkimSelector = "f14";
   const publicKey = await ses.addDomain(
     name,
     region,

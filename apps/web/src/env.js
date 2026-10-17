@@ -70,8 +70,8 @@ export const env = createEnv({
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
     XENDIT_SECRET_KEY: z.string().optional(),
     XENDIT_CALLBACK_TOKEN: z.string().optional(),
-    SMTP_HOST: z.string().default("smtp.usesend.com"),
-    SMTP_USER: z.string().default("usesend"),
+    SMTP_HOST: z.string().default("smtp.f14.dev"),
+    SMTP_USER: z.string().default("f14"),
     CONTACT_BOOK_ID: z.string().optional(),
     EMAIL_CLEANUP_DAYS: z
         .string()

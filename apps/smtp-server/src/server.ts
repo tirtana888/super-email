@@ -8,11 +8,11 @@ import { resolveRecipients } from "./recipients";
 
 dotenv.config();
 
-const AUTH_USERNAME = process.env.SMTP_AUTH_USERNAME ?? "usesend";
+const AUTH_USERNAME = process.env.SMTP_AUTH_USERNAME ?? "f14";
 const BASE_URL =
   process.env.USESEND_BASE_URL ??
   process.env.UNSEND_BASE_URL ??
-  "https://app.usesend.com";
+  "https://app.f14.dev";
 const SSL_KEY_PATH =
   process.env.USESEND_API_KEY_PATH ?? process.env.UNSEND_API_KEY_PATH;
 const SSL_CERT_PATH =

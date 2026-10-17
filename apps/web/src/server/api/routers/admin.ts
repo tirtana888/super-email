@@ -238,12 +238,12 @@ export const adminRouter = createTRPCRouter({
         const userFirstName =
           updatedUser.name?.split(" ")[0] ?? updatedUser.name ?? recipient;
 
-        const text = `Hey ${userFirstName},\n\nThanks for hanging in while we reviewed your waitlist request. I've just moved your account off the waitlist, so you now have full access to useSend.\n\nGo ahead and log back in to start sending: ${env.NEXTAUTH_URL}\n\nIf anything feels unclear or you want help getting set up, reply to this email and it comes straight to me.\n\nCheers,\n${founderName}\n${replyTo}`;
+        const text = `Hey ${userFirstName},\n\nThanks for hanging in while we reviewed your waitlist request. I've just moved your account off the waitlist, so you now have full access to F14.\n\nGo ahead and log back in to start sending: ${env.NEXTAUTH_URL}\n\nIf anything feels unclear or you want help getting set up, reply to this email and it comes straight to me.\n\nCheers,\n${founderName}\n${replyTo}`;
 
         try {
           await sendMail(
             recipient,
-            "useSend: You're off the waitlist",
+            "F14: You're off the waitlist",
             text,
             toPlainHtml(text),
             replyTo,
@@ -294,17 +294,17 @@ export const adminRouter = createTRPCRouter({
       const text = [
         "Hello,",
         "",
-        "Sorry, We cannot proceed with this request at this time, this might affect useSend\u2019s sending reputation.",
+        "Sorry, We cannot proceed with this request at this time, this might affect F14\u2019s sending reputation.",
         "",
         "",
         "cheers,",
-        "koushik - useSend.com",
+        "the F14 team",
       ].join("\n");
 
       try {
         await sendMail(
           user.email,
-          "useSend: Waitlist request update",
+          "F14: Waitlist request update",
           text,
           toPlainHtml(text),
           replyTo,

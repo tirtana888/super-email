@@ -118,7 +118,7 @@ export function getApp() {
     openapi: "3.0.0",
     info: {
       version: "1.0.0",
-      title: "useSend API",
+      title: "F14 API",
     },
     servers: [{ url: `${env.NEXTAUTH_URL}/api` }],
   }));

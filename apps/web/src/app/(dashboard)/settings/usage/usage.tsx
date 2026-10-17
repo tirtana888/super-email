@@ -49,7 +49,7 @@ function FreePlanUsage({
                 <div className="text-sm text-muted-foreground mt-1">
                   {item.type === "TRANSACTIONAL"
                     ? "Mails sent using the send api or SMTP"
-                    : "Mails designed sent from useSend editor"}
+                    : "Mails designed and sent from the F14 editor"}
                 </div>
               </div>
               <div className="font-mono font-medium">

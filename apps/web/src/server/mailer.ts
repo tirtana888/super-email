@@ -76,7 +76,7 @@ export async function sendSubscriptionConfirmationEmail(email: string) {
   }
 
   const subject = "Thanks for subscribing to F14";
-  const text = `Hey,\n\nThanks for subscribing to F14, just wanted to let you know you can join the discord server to have a dedicated support channel for your team. So that we can address your queries / bugs asap.\n\nYou can join over using the link: https://discord.com/invite/BU8n8pJv8S\n\nIf you prefer slack, please let me know\n\ncheers,\nthe F14 team`;
+  const text = `Hey,\n\nThanks for subscribing to F14. If you have any questions or run into any issues, just reply to this email and we'll get back to you as soon as we can.\n\nCheers,\nthe F14 team`;
   const html = text.replace(/\n/g, "<br />");
 
   await sendMail(email, subject, text, html, undefined, env.FOUNDER_EMAIL);

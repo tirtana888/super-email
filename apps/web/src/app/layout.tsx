@@ -20,7 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "F14 - Send Email Like a Jet",
-  description: "Open source email platform",
+  description: "Send email like a jet. Email API for developers in Indonesia.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 

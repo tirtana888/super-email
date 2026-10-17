@@ -5,7 +5,7 @@ const transporter = nodemailer.createTransport({
   port: 25,
   secure: false,
   auth: {
-    user: "usesend",
+    user: "f14",
     pass: "us_123",
   },
   tls: {
@@ -17,8 +17,8 @@ const mailOptions = {
   to: "sender@example.com",
   from: "hello@example.com",
   subject: "Testing SMTP",
-  html: "<strong>THIS IS USING SMTP,</strong><p>useSend is the best open source sending platform<p><p>check out <a href='https://usesend.com'>usesend.com</a>",
-  text: "hello,\n\nuseSend is the best open source sending platform",
+  html: "<strong>THIS IS USING SMTP,</strong><p>F14 SMTP test email</p><p>Learn more at <a href='https://f14.dev'>f14.dev</a></p>",
+  text: "hello,\n\nThis is an F14 SMTP test email",
 };
 
 transporter.sendMail(mailOptions, (error, info) => {

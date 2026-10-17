@@ -96,9 +96,9 @@ export const domainRouter = createTRPCRouter({
         teamId: team.id,
         to: user.email,
         from: `hello@${domain.name}`,
-        subject: "useSend test email",
-        text: "hello,\n\nuseSend is the best open source sending platform\n\ncheck out https://usesend.com",
-        html: "<p>hello,</p><p>useSend is the best open source sending platform<p><p>check out <a href='https://usesend.com'>usesend.com</a>",
+        subject: "F14 test email",
+        text: "Hello,\n\nThis is a test email from F14. Your domain is set up and ready to send.\n\nLearn more at https://f14.dev",
+        html: "<p>Hello,</p><p>This is a test email from F14. Your domain is set up and ready to send.</p><p>Learn more at <a href='https://f14.dev'>f14.dev</a></p>",
       });
     }
   ),
