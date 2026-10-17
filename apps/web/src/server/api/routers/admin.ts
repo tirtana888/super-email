@@ -70,6 +70,8 @@ export const adminRouter = createTRPCRouter({
 
   getDefaultSesRegion: adminProcedure.query(() => env.AWS_DEFAULT_REGION),
 
+  getWaitlistEnabled: adminProcedure.query(() => env.WAITLIST_ENABLED),
+
   getQuotaForRegion: adminProcedure
     .input(
       z.object({

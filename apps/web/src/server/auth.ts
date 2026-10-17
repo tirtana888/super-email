@@ -201,7 +201,12 @@ export const authOptions: NextAuthOptions = {
           isBetaUser: user.isBetaUser,
           isAdmin:
             !!env.ADMIN_EMAIL && email === env.ADMIN_EMAIL.toLowerCase(),
-          isWaitlisted: isAdminOrFounder ? false : user.isWaitlisted,
+          // With the waitlist disabled nobody is ever treated as waitlisted.
+          isWaitlisted: env.WAITLIST_ENABLED
+            ? isAdminOrFounder
+              ? false
+              : user.isWaitlisted
+            : false,
         },
       };
     },
@@ -293,6 +298,7 @@ export const authOptions: NextAuthOptions = {
         (env.FOUNDER_EMAIL && email === env.FOUNDER_EMAIL.toLowerCase());
 
       if (
+        !env.WAITLIST_ENABLED ||
         isSystemAdmin ||
         !env.NEXT_PUBLIC_IS_CLOUD ||
         env.NODE_ENV === "development" ||

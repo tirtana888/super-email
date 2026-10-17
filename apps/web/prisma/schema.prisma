@@ -79,18 +79,19 @@ model VerificationToken {
 }
 
 model User {
-  id               Int        @id @default(autoincrement())
+  id               Int              @id @default(autoincrement())
   name             String?
-  email            String?    @unique
+  email            String?          @unique
   emailVerified    DateTime?
   image            String?
-  isBetaUser       Boolean    @default(false)
-  isWaitlisted     Boolean    @default(false)
-  createdAt        DateTime   @default(now())
+  isBetaUser       Boolean          @default(false)
+  isWaitlisted     Boolean          @default(false)
+  createdAt        DateTime         @default(now())
   accounts         Account[]
   sessions         Session[]
   teamUsers        TeamUser[]
   webhookEndpoints Webhook[]
+  teamOnboardings  TeamOnboarding[]
 }
 
 enum Plan {
@@ -126,7 +127,23 @@ model Team {
   webhookEndpoints Webhook[]
   billingPlanId    String?
   billingPlan      BillingPlan?      @relation(fields: [billingPlanId], references: [id])
+  onboarding       TeamOnboarding?
   webhookCalls     WebhookCall[]
+}
+
+model TeamOnboarding {
+  id              String   @id @default(cuid())
+  teamId          Int      @unique
+  domain          String
+  emailTypes      String[]
+  monthlyVolume   String
+  useCases        String[]
+  otherUseCase    String?
+  language        String   @default("id")
+  createdByUserId Int?
+  createdAt       DateTime @default(now())
+  team            Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy       User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
 }
 
 model BillingPlan {

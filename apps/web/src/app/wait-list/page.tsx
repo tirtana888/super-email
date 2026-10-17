@@ -3,12 +3,17 @@ import { Rocket } from "lucide-react";
 import { getServerAuthSession } from "~/server/auth";
 import { WaitListForm } from "./waitlist-form";
 import { redirect } from "next/navigation";
+import { env } from "~/env";
 
 export default async function WaitListPage() {
   const session = await getServerAuthSession();
 
   if (!session?.user) {
     redirect("/login");
+  }
+
+  if (!env.WAITLIST_ENABLED) {
+    redirect("/dashboard");
   }
 
   const userEmail = session.user.email ?? "";

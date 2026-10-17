@@ -55,6 +55,11 @@ export const env = createEnv({
     FROM_EMAIL: z.string().optional(),
     ADMIN_EMAIL: z.string().optional(),
     FOUNDER_EMAIL: z.string().optional(),
+    // Waitlist is off unless this is exactly "true". Existing waitlist code stays in place.
+    WAITLIST_ENABLED: z
+      .string()
+      .default("false")
+      .transform((str) => str === "true"),
     DISCORD_WEBHOOK_URL: z.string().optional(),
     REDIS_URL: z.string(),
     REDIS_KEY_PREFIX: z.string().default(""),
@@ -121,6 +126,7 @@ export const env = createEnv({
     NEXT_PUBLIC_GIT_SHA: process.env.NEXT_PUBLIC_GIT_SHA,
     ADMIN_EMAIL: process.env.ADMIN_EMAIL,
     FOUNDER_EMAIL: process.env.FOUNDER_EMAIL,
+    WAITLIST_ENABLED: process.env.WAITLIST_ENABLED,
     DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL,
     REDIS_URL: process.env.REDIS_URL,
     REDIS_KEY_PREFIX: process.env.REDIS_KEY_PREFIX,

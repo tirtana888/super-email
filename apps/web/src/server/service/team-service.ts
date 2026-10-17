@@ -8,6 +8,7 @@ import { UnsendApiError } from "../public-api/api-error";
 import { getRedis, redisKey } from "~/server/redis";
 import { LimitReason } from "~/lib/constants/plans";
 import { PlanService } from "./plan-service";
+import type { OnboardingInput } from "~/lib/onboarding";
 import { LimitService } from "./limit-service";
 import { renderUsageLimitReachedEmail } from "../email-templates/UsageLimitReachedEmail";
 import { renderUsageWarningEmail } from "../email-templates/UsageWarningEmail";
@@ -56,6 +57,7 @@ export class TeamService {
   static async createTeam(
     userId: number,
     name: string,
+    onboarding?: Omit<OnboardingInput, "name">,
   ): Promise<Team | undefined> {
     const teams = await db.team.findMany({
       where: {
@@ -88,6 +90,19 @@ export class TeamService {
       data: {
         name,
         billingPlanId: defaultPlan?.id,
+        onboarding: onboarding
+          ? {
+              create: {
+                domain: onboarding.domain,
+                emailTypes: onboarding.emailTypes,
+                monthlyVolume: onboarding.monthlyVolume,
+                useCases: onboarding.useCases,
+                otherUseCase: onboarding.otherUseCase ?? null,
+                language: onboarding.language,
+                createdByUserId: userId,
+              },
+            }
+          : undefined,
         teamUsers: {
           create: {
             userId,

@@ -7,12 +7,38 @@ import {
   teamAdminProcedure,
 } from "~/server/api/trpc";
 import { TeamService } from "~/server/service/team-service";
+import { onboardingSchema } from "~/lib/onboarding";
+import { notifyFounderOfOnboarding } from "~/server/service/onboarding-service";
 
 export const teamRouter = createTRPCRouter({
   createTeam: protectedProcedure
     .input(z.object({ name: z.string() }))
     .mutation(async ({ ctx, input }) => {
       return TeamService.createTeam(ctx.session.user.id, input.name);
+    }),
+
+  completeOnboarding: protectedProcedure
+    .input(onboardingSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { name, ...answers } = input;
+      const team = await TeamService.createTeam(
+        ctx.session.user.id,
+        name,
+        answers,
+      );
+
+      // createTeam returns nothing when the user already has a team (e.g. a double submit).
+      if (!team) {
+        return { created: false as const };
+      }
+
+      await notifyFounderOfOnboarding({
+        user: ctx.session.user,
+        teamName: team.name,
+        answers: input,
+      });
+
+      return { created: true as const, teamId: team.id };
     }),
 
   getTeams: protectedProcedure.query(async ({ ctx }) => {

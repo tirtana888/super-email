@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { FullScreenLoading } from "~/components/FullScreenLoading";
 import { AddSesSettings } from "~/components/settings/AddSesSettings";
 import CreateTeam from "~/components/team/CreateTeam";
+import OnboardingForm from "~/components/onboarding/OnboardingForm";
 import { env } from "~/env";
 import { api } from "~/trpc/react";
 import { TeamProvider } from "./team-context";
@@ -35,7 +36,8 @@ export const DashboardProvider = ({
   }
 
   if (!teams || teams.length === 0) {
-    return <CreateTeam />;
+    // Cloud sign-ups answer a few onboarding questions; self-hosted installs just name the team.
+    return env.NEXT_PUBLIC_IS_CLOUD ? <OnboardingForm /> : <CreateTeam />;
   }
 
   return <TeamProvider>{children}</TeamProvider>;

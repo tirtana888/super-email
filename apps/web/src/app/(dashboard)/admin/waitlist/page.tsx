@@ -98,6 +98,8 @@ export default function AdminWaitlistPage() {
     updateWaitlist.mutate({ userId: userResult.id, isWaitlisted: checked });
   };
 
+  const waitlistEnabled = api.admin.getWaitlistEnabled.useQuery();
+
   const handleReject = () => {
     if (!userResult) return;
     rejectWaitlist.mutate({ userId: userResult.id });
@@ -113,6 +115,16 @@ export default function AdminWaitlistPage() {
 
   return (
     <div className="space-y-6">
+      {waitlistEnabled.data === false ? (
+        <div
+          role="status"
+          className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-600 dark:text-amber-400"
+        >
+          The waitlist is currently disabled. New sign-ups are active right away
+          and these tools only affect users who were already waitlisted. Set
+          WAITLIST_ENABLED=true in the environment to turn it back on.
+        </div>
+      ) : null}
       <div className="rounded-lg border p-6 shadow-sm">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>

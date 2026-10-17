@@ -6,12 +6,17 @@ const mocks = vi.hoisted(() => {
     GITHUB_ID: "github-client-id",
     GITHUB_SECRET: "github-client-secret",
     NEXT_PUBLIC_IS_CLOUD: true,
+    WAITLIST_ENABLED: false,
+    ADMIN_EMAIL: undefined as string | undefined,
+    FOUNDER_EMAIL: undefined as string | undefined,
   };
 
   const baseCreateUser = vi.fn();
   const accountFindUnique = vi.fn();
   const userFindUnique = vi.fn();
   const userFindFirst = vi.fn();
+  const userUpdate = vi.fn();
+  const inviteFindMany = vi.fn();
   const inviteFindFirst = vi.fn();
   const transactionUserFindFirst = vi.fn();
   const transactionInviteFindFirst = vi.fn();
@@ -36,6 +41,8 @@ const mocks = vi.hoisted(() => {
     accountFindUnique,
     userFindUnique,
     userFindFirst,
+    userUpdate,
+    inviteFindMany,
     inviteFindFirst,
     transactionUserFindFirst,
     transactionInviteFindFirst,
@@ -73,9 +80,11 @@ vi.mock("~/server/db", () => ({
     user: {
       findUnique: mocks.userFindUnique,
       findFirst: mocks.userFindFirst,
+      update: mocks.userUpdate,
     },
     teamInvite: {
       findFirst: mocks.inviteFindFirst,
+      findMany: mocks.inviteFindMany,
     },
     $transaction: mocks.transaction,
   },
@@ -352,6 +361,79 @@ describe("authOptions", () => {
 
       expect(mocks.transaction).toHaveBeenCalledOnce();
       expect(mocks.transactionUserCreate).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe("waitlist flag", () => {
+  const sessionCallback = authOptions.callbacks?.session;
+  const createUserEvent = authOptions.events?.createUser;
+
+  const waitlistedUser = {
+    id: 5,
+    email: "person@example.com",
+    isBetaUser: true,
+    isAdmin: false,
+    isWaitlisted: true,
+  };
+
+  const callSession = async (user: typeof waitlistedUser) =>
+    (await sessionCallback?.({
+      session: { user: { email: user.email }, expires: "" },
+      user,
+    } as never)) as { user: { isWaitlisted: boolean; isAdmin: boolean } };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.env.NEXT_PUBLIC_IS_CLOUD = true;
+    mocks.env.WAITLIST_ENABLED = false;
+    mocks.env.ADMIN_EMAIL = undefined;
+    mocks.env.FOUNDER_EMAIL = undefined;
+    mocks.inviteFindMany.mockResolvedValue([]);
+    mocks.userUpdate.mockResolvedValue({});
+  });
+
+  it("never treats a user as waitlisted while the waitlist is disabled", async () => {
+    const session = await callSession(waitlistedUser);
+
+    expect(session.user.isWaitlisted).toBe(false);
+  });
+
+  it("keeps the stored waitlist status when the waitlist is enabled", async () => {
+    mocks.env.WAITLIST_ENABLED = true;
+
+    const session = await callSession(waitlistedUser);
+
+    expect(session.user.isWaitlisted).toBe(true);
+  });
+
+  it("still lets the admin skip the waitlist when it is enabled", async () => {
+    mocks.env.WAITLIST_ENABLED = true;
+    mocks.env.ADMIN_EMAIL = "Person@Example.com";
+
+    const session = await callSession(waitlistedUser);
+
+    expect(session.user.isWaitlisted).toBe(false);
+    expect(session.user.isAdmin).toBe(true);
+  });
+
+  it("activates new cloud users immediately while the waitlist is disabled", async () => {
+    await createUserEvent?.({ user: { id: 5, email: "new@example.com" } } as never);
+
+    expect(mocks.userUpdate).toHaveBeenCalledWith({
+      where: { id: 5 },
+      data: { isBetaUser: true, isWaitlisted: false },
+    });
+  });
+
+  it("waitlists new cloud users when the waitlist is enabled", async () => {
+    mocks.env.WAITLIST_ENABLED = true;
+
+    await createUserEvent?.({ user: { id: 5, email: "new@example.com" } } as never);
+
+    expect(mocks.userUpdate).toHaveBeenCalledWith({
+      where: { id: 5 },
+      data: { isBetaUser: true, isWaitlisted: true },
     });
   });
 });
