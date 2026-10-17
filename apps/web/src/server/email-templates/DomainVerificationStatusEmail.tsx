@@ -114,7 +114,7 @@ export function DomainVerificationStatusEmail({
         >
           Thanks,
           <br />
-          useSend Team
+          F14 Team
         </Text>
       </Container>
 

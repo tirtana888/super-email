@@ -28,7 +28,7 @@ export async function sendSignUpEmail(
     return;
   }
 
-  const subject = "Sign in to useSend";
+  const subject = "Sign in to F14";
 
   // Use jsx-email template for beautiful HTML
   const html = await renderOtpEmail({
@@ -38,7 +38,7 @@ export async function sendSignUpEmail(
   });
 
   // Fallback text version
-  const text = `Hey,\n\nYou can sign in to useSend by clicking the below URL:\n${url}\n\nYou can also use this OTP: ${token}\n\nThanks,\nuseSend Team`;
+  const text = `Hey,\n\nYou can sign in to F14 by clicking the below URL:\n${url}\n\nYou can also use this OTP: ${token}\n\nThanks,\nF14 Team`;
 
   await sendMail(email, subject, text, html);
 }
@@ -55,7 +55,7 @@ export async function sendTeamInviteEmail(
     return;
   }
 
-  const subject = "You have been invited to join useSend";
+  const subject = "You have been invited to join F14";
 
   // Use jsx-email template for beautiful HTML
   const html = await renderTeamInviteEmail({
@@ -64,7 +64,7 @@ export async function sendTeamInviteEmail(
   });
 
   // Fallback text version
-  const text = `Hey,\n\nYou have been invited to join the team ${teamName} on useSend.\n\nYou can accept the invitation by clicking the below URL:\n${url}\n\nThanks,\nuseSend Team`;
+  const text = `Hey,\n\nYou have been invited to join the team ${teamName} on F14.\n\nYou can accept the invitation by clicking the below URL:\n${url}\n\nThanks,\nF14 Team`;
 
   await sendMail(email, subject, text, html);
 }
@@ -75,8 +75,8 @@ export async function sendSubscriptionConfirmationEmail(email: string) {
     return;
   }
 
-  const subject = "Thanks for subscribing to useSend";
-  const text = `Hey,\n\nThanks for subscribing to useSend, just wanted to let you know you can join the discord server to have a dedicated support channel for your team. So that we can address your queries / bugs asap.\n\nYou can join over using the link: https://discord.com/invite/BU8n8pJv8S\n\nIf you prefer slack, please let me know\n\ncheers,\nkoushik - useSend`;
+  const subject = "Thanks for subscribing to F14";
+  const text = `Hey,\n\nThanks for subscribing to F14, just wanted to let you know you can join the discord server to have a dedicated support channel for your team. So that we can address your queries / bugs asap.\n\nYou can join over using the link: https://discord.com/invite/BU8n8pJv8S\n\nIf you prefer slack, please let me know\n\ncheers,\nthe F14 team`;
   const html = text.replace(/\n/g, "<br />");
 
   await sendMail(email, subject, text, html, undefined, env.FOUNDER_EMAIL);

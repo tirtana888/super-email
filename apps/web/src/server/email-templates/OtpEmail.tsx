@@ -16,7 +16,7 @@ interface OtpEmailProps {
 export function OtpEmail({
   otpCode,
   loginUrl,
-  hostName = "useSend",
+  hostName = "F14",
   logoUrl,
 }: OtpEmailProps) {
   return (
@@ -45,7 +45,7 @@ export function OtpEmail({
             textAlign: "left" as const,
           }}
         >
-          Use the verification code below to sign in to your useSend account:
+          Use the verification code below to sign in to your {hostName} account:
         </Text>
 
         <Container
