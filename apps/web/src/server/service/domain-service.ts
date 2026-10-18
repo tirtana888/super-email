@@ -18,6 +18,8 @@ import {
 import { LimitService } from "./limit-service";
 import type { DomainDnsRecord } from "~/types/domain";
 import { WebhookService } from "./webhook-service";
+import { normalizeDomainName } from "~/lib/domain-name";
+import { runWithRollback } from "~/lib/rollback";
 
 const DOMAIN_STATUS_VALUES = new Set(Object.values(DomainStatus));
 export const DOMAIN_UNVERIFIED_RECHECK_MS = 6 * 60 * 60 * 1000;
@@ -393,10 +395,12 @@ export async function validateApiKeyDomainAccess(
 
 export async function createDomain(
   teamId: number,
-  name: string,
+  rawName: string,
   region: string,
   sesTenantId?: string,
 ) {
+  // SES treats upper and lower case as the same identity, so we store and send one spelling.
+  const name = normalizeDomainName(rawName);
   const domainStr = tldts.getDomain(name);
 
   logger.info({ domainStr, name, region }, "Creating domain");
@@ -421,28 +425,56 @@ export async function createDomain(
     });
   }
 
+  const alreadyRegistered = await db.domain.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
+    select: { id: true },
+  });
+
+  if (alreadyRegistered) {
+    throw new UnsendApiError({
+      code: "NOT_UNIQUE",
+      message: "This domain is already registered.",
+    });
+  }
+
   const subdomain = tldts.getSubdomain(name);
   const dkimSelector = "f14";
-  const publicKey = await ses.addDomain(
-    name,
-    region,
-    sesTenantId,
-    dkimSelector,
-  );
 
-  const domain = await db.domain.create({
-    data: {
-      name,
-      publicKey,
-      teamId,
-      subdomain,
-      region,
-      sesTenantId,
-      dkimSelector,
-      dkimStatus: DomainStatus.NOT_STARTED,
-      spfDetails: DomainStatus.NOT_STARTED,
-    },
-  });
+  let publicKey: string;
+  try {
+    publicKey = await ses.addDomain(name, region, sesTenantId, dkimSelector);
+  } catch (err) {
+    if ((err as { name?: string } | null)?.name === "AlreadyExistsException") {
+      logger.warn({ err, name, region }, "SES identity already exists");
+      throw new UnsendApiError({
+        code: "NOT_UNIQUE",
+        message:
+          "This domain is already registered. If it is not in your domain list, please contact support.",
+      });
+    }
+
+    logger.error({ err, name, region }, "Failed to create the SES identity");
+    throw err;
+  }
+
+  // The identity now exists in AWS; if saving it fails, remove it so a retry can succeed.
+  const domain = await runWithRollback(
+    () =>
+      db.domain.create({
+        data: {
+          name,
+          publicKey,
+          teamId,
+          subdomain,
+          region,
+          sesTenantId,
+          dkimSelector,
+          dkimStatus: DomainStatus.NOT_STARTED,
+          spfDetails: DomainStatus.NOT_STARTED,
+        },
+      }),
+    () => ses.removeHalfCreatedIdentity(name, region, sesTenantId),
+  );
 
   await emitDomainEvent(domain, "domain.created");
 

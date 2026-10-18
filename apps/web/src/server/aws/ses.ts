@@ -21,6 +21,7 @@ import { getAwsCredentialOptions } from "~/server/aws/credentials";
 import { EmailContent } from "~/types";
 import { logger } from "../logger/log";
 import { buildHeaders } from "~/server/utils/email-headers";
+import { runWithRollback } from "~/lib/rollback";
 
 let accountId: string | undefined = undefined;
 
@@ -96,45 +97,95 @@ export async function addDomain(
   });
   const response = await sesClient.send(command);
 
-  const emailIdentityCommand = new PutEmailIdentityMailFromAttributesCommand({
-    EmailIdentity: domain,
-    MailFromDomain: `mail.${domain}`,
-  });
-
-  const emailIdentityResponse = await sesClient.send(emailIdentityCommand);
-
-  if (sesTenantId) {
-    const tenantResourceAssociationCommand =
-      new CreateTenantResourceAssociationCommand({
-        TenantName: sesTenantId,
-        ResourceArn: await getIdentityArn(domain, region),
-      });
-
-    const tenantResourceAssociationResponse = await sesClient.send(
-      tenantResourceAssociationCommand
-    );
-
-    if (tenantResourceAssociationResponse.$metadata.httpStatusCode !== 200) {
-      logger.error(
-        { tenantResourceAssociationResponse },
-        "Failed to associate domain with tenant"
+  // From here on the identity exists in AWS. If any later step fails it has to be removed again,
+  // otherwise it stays behind and every retry fails with "already exists".
+  return runWithRollback(
+    async () => {
+      const emailIdentityCommand = new PutEmailIdentityMailFromAttributesCommand(
+        {
+          EmailIdentity: domain,
+          MailFromDomain: `mail.${domain}`,
+        }
       );
-      throw new Error("Failed to associate domain with tenant");
+
+      const emailIdentityResponse = await sesClient.send(emailIdentityCommand);
+
+      if (sesTenantId) {
+        const tenantResourceAssociationCommand =
+          new CreateTenantResourceAssociationCommand({
+            TenantName: sesTenantId,
+            ResourceArn: await getIdentityArn(domain, region),
+          });
+
+        const tenantResourceAssociationResponse = await sesClient.send(
+          tenantResourceAssociationCommand
+        );
+
+        if (
+          tenantResourceAssociationResponse.$metadata.httpStatusCode !== 200
+        ) {
+          logger.error(
+            { tenantResourceAssociationResponse },
+            "Failed to associate domain with tenant"
+          );
+          throw new Error("Failed to associate domain with tenant");
+        }
+      }
+
+      if (
+        response.$metadata.httpStatusCode !== 200 ||
+        emailIdentityResponse.$metadata.httpStatusCode !== 200
+      ) {
+        logger.error(
+          { response, emailIdentityResponse },
+          "Failed to create domain identity"
+        );
+        throw new Error("Failed to create domain identity");
+      }
+
+      return publicKey;
+    },
+    () => removeHalfCreatedIdentity(domain, region, sesTenantId)
+  );
+}
+
+/**
+ * Best-effort removal of an identity this process created a moment ago. It never throws: the
+ * caller is already handling the original failure, and a leftover is logged so it can be cleaned
+ * up by hand.
+ */
+export async function removeHalfCreatedIdentity(
+  domain: string,
+  region: string,
+  sesTenantId?: string
+) {
+  const sesClient = getSesClient(region);
+
+  try {
+    if (sesTenantId) {
+      try {
+        await sesClient.send(
+          new DeleteTenantResourceAssociationCommand({
+            TenantName: sesTenantId,
+            ResourceArn: await getIdentityArn(domain, region),
+          })
+        );
+      } catch {
+        // The association may not exist yet when the failure happened before it was created.
+      }
     }
-  }
 
-  if (
-    response.$metadata.httpStatusCode !== 200 ||
-    emailIdentityResponse.$metadata.httpStatusCode !== 200
-  ) {
-    logger.error(
-      { response, emailIdentityResponse },
-      "Failed to create domain identity"
+    await sesClient.send(new DeleteEmailIdentityCommand({ EmailIdentity: domain }));
+    logger.warn(
+      { domain, region },
+      "Removed a half-created SES identity after a failure"
     );
-    throw new Error("Failed to create domain identity");
+  } catch (err) {
+    logger.error(
+      { err, domain, region },
+      "Could not remove a half-created SES identity, delete it manually"
+    );
   }
-
-  return publicKey;
 }
 
 export async function deleteDomain(
