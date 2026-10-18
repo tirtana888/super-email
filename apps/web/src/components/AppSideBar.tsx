@@ -58,11 +58,6 @@ import { env } from "~/env";
 // General items
 const generalItems = [
   {
-    title: "Analytics",
-    url: "/dashboard",
-    icon: BarChart3,
-  },
-  {
     title: "Emails",
     url: "/emails",
     icon: Mail,
@@ -71,6 +66,11 @@ const generalItems = [
     title: "Templates",
     url: "/templates",
     icon: LayoutTemplate,
+  },
+  {
+    title: "Metrics",
+    url: "/dashboard",
+    icon: BarChart3,
   },
   {
     title: "Suppressions",
@@ -82,12 +82,12 @@ const generalItems = [
 // Marketing items
 const marketingItems = [
   {
-    title: "Contacts",
+    title: "Audience",
     url: "/contacts",
     icon: BookUser,
   },
   {
-    title: "Campaigns",
+    title: "Broadcasting",
     url: "/campaigns",
     icon: Volume2,
   },

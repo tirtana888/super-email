@@ -110,7 +110,7 @@ export default function CampaignDetailsPage({
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
                 <Link href="/campaigns" className="text-lg">
-                  Campaigns
+                  Broadcasting
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>

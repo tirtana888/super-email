@@ -217,7 +217,7 @@ export default function ContactsPage({
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Link href="/contacts" className="text-xl">
-                    Contact books
+                    Audience
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
