@@ -1,19 +1,18 @@
 import "./globals.css";
 
-import { Inter } from "next/font/google";
-import { JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@usesend/ui";
 import { Toaster } from "@usesend/ui/src/toaster";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import { Metadata } from "next";
 
-const inter = Inter({
+const geist = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 });
@@ -32,7 +31,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="bg-sidebar-background">
       <body
-        className={`font-sans ${inter.variable} ${jetbrainsMono.variable} app bg-sidebar-background`}
+        className={`font-sans ${geist.variable} ${geistMono.variable} app bg-sidebar-background`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster />

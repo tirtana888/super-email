@@ -4,10 +4,10 @@
 
 @theme inline {
   --font-sans:
-    Inter, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    Geist, Inter, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-mono:
-    "JetBrains Mono", Menlo, ui-monospace, SFMono-Regular, Monaco, Consolas,
+    "Geist Mono", Menlo, ui-monospace, SFMono-Regular, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 
   --color-border: hsl(var(--border));
@@ -142,29 +142,29 @@
   }
 
   .dark {
-    --background: 240 21% 12%;
-    --foreground: 226 64% 88%;
+    --background: 240 10% 3.9%;
+    --foreground: 240 5% 93%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 226 64% 88%;
+    --card: 240 10% 6.5%;
+    --card-foreground: 240 5% 93%;
 
-    --popover: 240 21% 15%;
-    --popover-foreground: 226 64% 88%;
+    --popover: 240 9% 8%;
+    --popover-foreground: 240 5% 93%;
 
     --primary: 167 64% 94%;
-    --primary-foreground: 240 23% 9%;
+    --primary-foreground: 240 10% 4%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 4% 13%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 237 16% 23%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 4% 10%;
+    --muted-foreground: 240 5% 65%;
 
-    --accent: 237 16% 23%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 240 4% 13%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 343 81% 75%;
-    --destructive-foreground: 240 21% 15%;
+    --destructive-foreground: 240 10% 6%;
 
     --success: 115 54% 76%;
     --success-foreground: 210 40% 98%;
@@ -172,9 +172,9 @@
     --warning: 41 86% 83%;
     --warning-foreground: 210 40% 98%;
 
-    --border: 237 16% 23%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 217.2 32.6% 17.5%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 240 5% 26%;
 
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -182,13 +182,13 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    --sidebar-background: 240 21% 12%;
-    --sidebar-foreground: 226 64% 88%;
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 240 5% 93%;
     --sidebar-primary: 167 64% 94%;
-    --sidebar-primary-foreground: 240 23% 9%;
-    --sidebar-accent: 237 17% 20%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 21% 15%;
+    --sidebar-primary-foreground: 240 10% 4%;
+    --sidebar-accent: 240 4% 10%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 240 4% 12%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Status Colors - Dark Mode */
