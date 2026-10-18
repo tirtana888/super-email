@@ -16,6 +16,11 @@ export default function AdminLayout({
           SES Configurations
         </SettingsNavButton>
         {isCloud() ? (
+          <SettingsNavButton href="/admin/users">
+            Users
+          </SettingsNavButton>
+        ) : null}
+        {isCloud() ? (
           <SettingsNavButton href="/admin/teams">
             Teams
           </SettingsNavButton>

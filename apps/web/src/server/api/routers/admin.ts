@@ -17,6 +17,10 @@ import { AppSettingsService } from "~/server/service/app-settings-service";
 import { TRPCError } from "@trpc/server";
 import { TeamPlanService } from "~/server/service/team-plan-service";
 import { TeamService } from "~/server/service/team-service";
+import {
+  ADMIN_USER_FILTERS,
+  AdminUserService,
+} from "~/server/service/admin-user-service";
 
 const waitlistUserSelection = {
   id: true,
@@ -184,6 +188,48 @@ export const adminRouter = createTRPCRouter({
       return SesSettingsService.getSetting(
         input.region ?? env.AWS_DEFAULT_REGION,
       );
+    }),
+
+  /**
+   * Lists every user with their teams, plan and this month's volume. On self-hosted installs
+   * adminProcedure lets any signed-in user through, so this is cloud-only.
+   */
+  listUsers: adminProcedure
+    .input(
+      z.object({
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(100).default(25),
+        search: z.string().trim().max(100).optional(),
+        filter: z.enum(ADMIN_USER_FILTERS).default("all"),
+      }),
+    )
+    .query(async ({ input }) => {
+      if (!env.NEXT_PUBLIC_IS_CLOUD) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      return AdminUserService.list({
+        ...input,
+        search: input.search || undefined,
+      });
+    }),
+
+  exportUsers: adminProcedure
+    .input(
+      z.object({
+        search: z.string().trim().max(100).optional(),
+        filter: z.enum(ADMIN_USER_FILTERS).default("all"),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      if (!env.NEXT_PUBLIC_IS_CLOUD) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      return AdminUserService.exportAll({
+        ...input,
+        search: input.search || undefined,
+      });
     }),
 
   findUserByEmail: adminProcedure
