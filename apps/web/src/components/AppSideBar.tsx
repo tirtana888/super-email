@@ -73,7 +73,7 @@ const generalItems = [
     icon: BarChart3,
   },
   {
-    title: "Suppressions",
+    title: "Exclusions",
     url: "/suppressions",
     icon: UserRoundX,
   },
