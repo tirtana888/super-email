@@ -59,6 +59,34 @@ export default function DomainItemPage({
     { staleTime: 5 * 60 * 1000 },
   );
   const isCloudflare = dnsProviderQuery.data?.provider === "cloudflare";
+  const autoSetupQuery = api.domain.getAutoSetup.useQuery(
+    { id: Number(domainId) },
+    { staleTime: 5 * 60 * 1000 },
+  );
+  const autoSetup = autoSetupQuery.data?.available ? autoSetupQuery.data : null;
+
+  // The DNS provider sends the customer back here with ?autosetup=done after they approve the records.
+  const returnedFromAutoSetup = React.useRef(false);
+  React.useEffect(() => {
+    if (returnedFromAutoSetup.current) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("autosetup") !== "done") {
+      return;
+    }
+
+    returnedFromAutoSetup.current = true;
+    toast.success("DNS records were sent to your provider. Verifying now...");
+    window.history.replaceState(null, "", window.location.pathname);
+    verifyQuery.mutate(
+      { id: Number(domainId) },
+      { onSettled: () => domainQuery.refetch() },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCopyAllRecords = async () => {
     const records = domainQuery.data?.dnsRecords ?? [];
@@ -156,8 +184,15 @@ export default function DomainItemPage({
                 >
                   Copy all records
                 </Button>
-                {isCloudflare ? (
+                {autoSetup ? (
                   <Button size="sm" asChild>
+                    <a href={autoSetup.applyUrl}>
+                      Set up automatically with {autoSetup.providerName}
+                    </a>
+                  </Button>
+                ) : null}
+                {isCloudflare ? (
+                  <Button size="sm" variant={autoSetup ? "outline" : "default"} asChild>
                     <a
                       href={CLOUDFLARE_DNS_URL}
                       target="_blank"

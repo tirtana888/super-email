@@ -61,6 +61,9 @@ export const env = createEnv({
       .default("false")
       .transform((str) => str === "true"),
     DISCORD_WEBHOOK_URL: z.string().optional(),
+    // Domain Connect one-click DNS setup: base64 of the PEM private key and the TXT host label of its public key.
+    DOMAIN_CONNECT_PRIVATE_KEY: z.string().optional(),
+    DOMAIN_CONNECT_KEY_HOST: z.string().optional(),
     REDIS_URL: z.string(),
     REDIS_KEY_PREFIX: z.string().default(""),
     S3_COMPATIBLE_ACCESS_KEY: z.string().optional(),
@@ -128,6 +131,8 @@ export const env = createEnv({
     FOUNDER_EMAIL: process.env.FOUNDER_EMAIL,
     WAITLIST_ENABLED: process.env.WAITLIST_ENABLED,
     DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL,
+    DOMAIN_CONNECT_PRIVATE_KEY: process.env.DOMAIN_CONNECT_PRIVATE_KEY,
+    DOMAIN_CONNECT_KEY_HOST: process.env.DOMAIN_CONNECT_KEY_HOST,
     REDIS_URL: process.env.REDIS_URL,
     REDIS_KEY_PREFIX: process.env.REDIS_KEY_PREFIX,
     FROM_EMAIL: process.env.FROM_EMAIL,

@@ -29,6 +29,20 @@ export default function AdminSettingsPage() {
     },
   });
 
+  const setDomainConnectEnabled = api.admin.setDomainConnectEnabled.useMutation({
+    onSuccess: async (result) => {
+      await utils.admin.getFeatureFlags.invalidate();
+      toast.success(
+        result.domainConnectEnabled
+          ? "One-click DNS setup is now enabled"
+          : "One-click DNS setup is now disabled",
+      );
+    },
+    onError: (error) => {
+      toast.error(error.message ?? "Unable to update the setting");
+    },
+  });
+
   if (!isCloud()) {
     return (
       <div className="rounded-lg border bg-muted/30 p-6 text-sm text-muted-foreground">
@@ -46,6 +60,8 @@ export default function AdminSettingsPage() {
   }
 
   const feedbackEnabled = flags.data?.feedbackEnabled ?? false;
+  const domainConnectEnabled = flags.data?.domainConnectEnabled ?? false;
+  const domainConnectConfigured = flags.data?.domainConnectConfigured ?? false;
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -67,6 +83,35 @@ export default function AdminSettingsPage() {
               setFeedbackEnabled.mutate({ enabled })
             }
             aria-label="Toggle user feedback"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-6">
+          <div>
+            <p className="font-medium">One-click DNS setup (Domain Connect)</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Shows a &quot;Set up automatically&quot; button on the domain page
+              for domains whose DNS provider has approved the F14 template (for
+              example Cloudflare). The customer approves the records at their
+              provider and returns to F14. Off by default, and the button only
+              appears when the provider has published the template.
+            </p>
+            {!domainConnectConfigured ? (
+              <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                The signing key is not configured on the server, so this switch
+                has no effect yet.
+              </p>
+            ) : null}
+          </div>
+          <Switch
+            checked={domainConnectEnabled}
+            disabled={setDomainConnectEnabled.isPending || flags.isError}
+            onCheckedChange={(enabled) =>
+              setDomainConnectEnabled.mutate({ enabled })
+            }
+            aria-label="Toggle one-click DNS setup"
           />
         </div>
       </div>

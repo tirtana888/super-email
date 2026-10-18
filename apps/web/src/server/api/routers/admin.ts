@@ -79,8 +79,26 @@ export const adminRouter = createTRPCRouter({
       feedbackEnabled: await AppSettingsService.isEnabled(
         APP_SETTING_KEYS.FEEDBACK_ENABLED,
       ),
+      domainConnectEnabled: await AppSettingsService.isEnabled(
+        APP_SETTING_KEYS.DOMAIN_CONNECT_ENABLED,
+      ),
+      // Lets the admin page say when the switch cannot work yet.
+      domainConnectConfigured: Boolean(
+        env.DOMAIN_CONNECT_PRIVATE_KEY && env.DOMAIN_CONNECT_KEY_HOST,
+      ),
     };
   }),
+
+  setDomainConnectEnabled: adminProcedure
+    .input(z.object({ enabled: z.boolean() }))
+    .mutation(async ({ input }) => {
+      await AppSettingsService.setEnabled(
+        APP_SETTING_KEYS.DOMAIN_CONNECT_ENABLED,
+        input.enabled,
+      );
+
+      return { domainConnectEnabled: input.enabled };
+    }),
 
   setFeedbackEnabled: adminProcedure
     .input(z.object({ enabled: z.boolean() }))

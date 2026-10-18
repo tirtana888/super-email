@@ -1,5 +1,6 @@
 export const APP_SETTING_KEYS = {
   FEEDBACK_ENABLED: "feedback.enabled",
+  DOMAIN_CONNECT_ENABLED: "domainConnect.enabled",
 } as const;
 
 export type AppSettingKey =
