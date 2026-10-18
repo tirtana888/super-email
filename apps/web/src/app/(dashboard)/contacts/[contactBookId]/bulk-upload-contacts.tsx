@@ -416,7 +416,7 @@ export default function BulkUploadContacts({
       {dialogTrigger ? (
         <DialogTrigger asChild>{dialogTrigger}</DialogTrigger>
       ) : null}
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Bulk Upload Contacts</DialogTitle>
           <DialogDescription className="text-sm">
@@ -425,7 +425,7 @@ export default function BulkUploadContacts({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="min-w-0 space-y-4">
           <Tabs defaultValue="text" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="file">
@@ -531,7 +531,7 @@ Format: email,firstName,lastName,subscribed (all fields except email are optiona
                   <TableBody>
                     {previewContacts.map((contact, index) => (
                       <TableRow key={`${contact.email}-${index}`}>
-                        <TableCell className="font-mono text-sm">
+                        <TableCell className="break-all font-mono text-sm">
                           {contact.email}
                         </TableCell>
                         <TableCell className="text-sm">
