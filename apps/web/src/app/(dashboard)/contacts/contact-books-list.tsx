@@ -31,7 +31,7 @@ export default function ContactBooksList() {
         defaultValue={search ?? ""}
         onChange={(e) => debouncedSearch(e.target.value)}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 ">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-6">
         {contactBooksQuery.data?.map((contactBook) => (
           <motion.div
             key={contactBook.id}
@@ -42,18 +42,21 @@ export default function ContactBooksList() {
           >
             <div className="flex flex-col">
               <Link href={`/contacts/${contactBook.id}`} key={contactBook.id}>
-                <div className="flex justify-between items-center p-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div>{contactBook.emoji}</div>
-                    <div className="font-semibold truncate whitespace-nowrap overflow-ellipsis w-[180px]">
+                <div className="flex items-center justify-between gap-3 p-4 mb-4">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <div className="shrink-0">{contactBook.emoji}</div>
+                    <div
+                      className="min-w-0 flex-1 truncate font-semibold"
+                      title={contactBook.name}
+                    >
                       {contactBook.name}
                     </div>
                   </div>
-                  <div className="text-sm">
+                  <div className="shrink-0 whitespace-nowrap text-sm">
                     <span className="font-mono">
                       {contactBook._count.contacts}
                     </span>{" "}
-                    contacts
+                    {contactBook._count.contacts === 1 ? "contact" : "contacts"}
                   </div>
                 </div>
               </Link>

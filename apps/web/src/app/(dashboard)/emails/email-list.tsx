@@ -55,6 +55,14 @@ const DynamicSheetContentWithNoSSR = dynamic(
   { ssr: false },
 );
 
+function recipients(to: string | string[] | null | undefined): string[] {
+  if (!to) {
+    return [];
+  }
+
+  return Array.isArray(to) ? to : [to];
+}
+
 export default function EmailsList() {
   const [selectedEmail, setSelectedEmail] = useUrlState("emailId");
   const [page, setPage] = useUrlState("page", "1");
@@ -164,19 +172,19 @@ export default function EmailsList() {
 
   return (
     <div className="mt-10 flex flex-col gap-4">
-      <div className="flex flex-col  sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <Input
           placeholder="Search by subject or email"
-          className="w-full sm:w-[350px] sm:mr-4"
+          className="w-full lg:max-w-[320px] lg:flex-1"
           defaultValue={search ?? ""}
           onChange={(e) => debouncedSearch(e.target.value)}
         />
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Select
             value={apiKey ?? "All API Keys"}
             onValueChange={(val) => handleApiKey(val)}
           >
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               {apiKey
                 ? apiKeysQuery?.find((apikey) => apikey.id === Number(apiKey))
                     ?.name
@@ -196,7 +204,7 @@ export default function EmailsList() {
             value={domain ?? "All Domains"}
             onValueChange={(val) => handleDomain(val)}
           >
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               {domain
                 ? domainsQuery?.find((d) => d.id === Number(domain))?.name
                 : "All Domains"}
@@ -219,7 +227,7 @@ export default function EmailsList() {
               setStatus(val === "All statuses" ? null : val)
             }
           >
-            <SelectTrigger className="w-full sm:w-[180px] capitalize">
+            <SelectTrigger className="w-full sm:w-[160px] capitalize">
               {status ? status.toLowerCase().replace("_", " ") : "All statuses"}
             </SelectTrigger>
             <SelectContent>
@@ -262,8 +270,8 @@ export default function EmailsList() {
               <TableHead className="rounded-tl-xl">To</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Subject</TableHead>
-              <TableHead className="text-right rounded-tr-xl">
-                Sent at
+              <TableHead className="whitespace-nowrap text-right rounded-tr-xl">
+                Sent
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -285,9 +293,16 @@ export default function EmailsList() {
                   className=" cursor-pointer"
                 >
                   <TableCell className="font-medium">
-                    <div className="flex gap-4 items-center">
-                      {/* <EmailIcon status={email.latestStatus ?? "Sent"} /> */}
-                      <p> {email.to}</p>
+                    <div
+                      className="max-w-[240px] truncate"
+                      title={recipients(email.to).join(", ")}
+                    >
+                      {recipients(email.to)[0]}
+                      {recipients(email.to).length > 1 ? (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          +{recipients(email.to).length - 1}
+                        </span>
+                      ) : null}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -313,15 +328,29 @@ export default function EmailsList() {
                     )}
                   </TableCell>
                   <TableCell className="">
-                    <div className=" max-w-xs truncate">{email.subject}</div>
+                    <div
+                      className="max-w-[160px] truncate text-muted-foreground md:max-w-[240px] xl:max-w-[360px]"
+                      title={email.subject ?? undefined}
+                    >
+                      {email.subject}
+                    </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {email.latestStatus !== "SCHEDULED"
-                      ? formatDate(
+                  <TableCell className="whitespace-nowrap text-right text-muted-foreground">
+                    {email.latestStatus !== "SCHEDULED" ? (
+                      <span
+                        title={formatDate(
                           email.scheduledAt ?? email.createdAt,
-                          "MMM do, hh:mm a",
-                        )
-                      : "--"}
+                          "MMM do yyyy, hh:mm a",
+                        )}
+                      >
+                        {formatDistanceToNow(
+                          new Date(email.scheduledAt ?? email.createdAt),
+                          { addSuffix: true },
+                        )}
+                      </span>
+                    ) : (
+                      "--"
+                    )}
                   </TableCell>
                 </TableRow>
               ))

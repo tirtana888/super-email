@@ -33,12 +33,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarInset className="min-w-0">
           <main
             ref={mainRef}
-            className="h-full flex-1 overflow-y-auto overflow-x-hidden p-4 xl:px-40"
+            className="h-full flex-1 overflow-y-auto overflow-x-hidden p-4 md:px-8"
           >
-            {isMobile ? (
-              <SidebarTrigger className="h-5 w-5 text-muted-foreground" />
-            ) : null}
-            {children}
+            <div className="mx-auto w-full max-w-7xl">
+              {isMobile ? (
+                <SidebarTrigger className="h-5 w-5 text-muted-foreground" />
+              ) : null}
+              {children}
+            </div>
           </main>
         </SidebarInset>
       </SidebarProvider>

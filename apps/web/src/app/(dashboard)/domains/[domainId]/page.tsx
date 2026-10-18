@@ -172,43 +172,51 @@ export default function DomainItemPage({
             <Table className="mt-2">
               <TableHeader className="">
                 <TableRow className="">
-                  <TableHead className="rounded-tl-xl">Type</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Content</TableHead>
-                  <TableHead className="">TTL</TableHead>
-                  <TableHead className="">Priority</TableHead>
-                  <TableHead className="rounded-tr-xl">Status</TableHead>
+                  <TableHead className="rounded-tl-xl px-3">Type</TableHead>
+                  <TableHead className="px-3">Name</TableHead>
+                  <TableHead className="px-3">Content</TableHead>
+                  <TableHead className="rounded-tr-xl px-3">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(domainQuery.data?.dnsRecords ?? []).map((record) => {
                   const key = `${record.type}-${record.name}`;
-                  const valueClassName = record.name.includes("_domainkey")
-                    ? "w-[200px] overflow-hidden text-ellipsis"
-                    : "w-[200px] overflow-hidden text-ellipsis text-nowrap";
 
                   return (
                     <TableRow key={key}>
-                      <TableCell className="">{record.type}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 items-center">
-                          {record.recommended ? (
-                            <span className="text-sm text-muted-foreground">
-                              (recommended)
-                            </span>
-                          ) : null}
-                          <TextWithCopyButton value={record.name} />
+                      <TableCell className="px-3 py-3 align-top">
+                        <div className="font-mono">{record.type}</div>
+                        {record.priority ? (
+                          <div className="text-xs text-muted-foreground">
+                            Priority {record.priority}
+                          </div>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="px-3 py-3 align-top">
+                        <div title={record.name}>
+                          <TextWithCopyButton
+                            value={record.name}
+                            className="max-w-[160px] truncate lg:max-w-[240px]"
+                          />
+                        </div>
+                        {record.recommended ? (
+                          <div className="text-xs text-muted-foreground">
+                            Recommended
+                          </div>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="px-3 py-3 align-top">
+                        <div title={record.value}>
+                          <TextWithCopyButton
+                            value={record.value}
+                            className="max-w-[180px] truncate lg:max-w-[280px] xl:max-w-[360px]"
+                          />
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          TTL {record.ttl}
                         </div>
                       </TableCell>
-                      <TableCell className="">
-                        <TextWithCopyButton
-                          value={record.value}
-                          className={valueClassName}
-                        />
-                      </TableCell>
-                      <TableCell className="">{record.ttl}</TableCell>
-                      <TableCell className="">{record.priority ?? ""}</TableCell>
-                      <TableCell className="">
+                      <TableCell className="px-3 py-3 align-top">
                         <DnsVerificationStatus status={record.status} />
                       </TableCell>
                     </TableRow>
@@ -320,9 +328,11 @@ const DnsVerificationStatus: React.FC<{ status: DomainStatus }> = ({ status }) =
 
   return (
     <div
-      className={` text-xs text-center min-w-[70px] capitalize rounded-md py-1 justify-center flex items-center ${badgeColor}`}
+      className={`text-xs text-center min-w-[70px] whitespace-nowrap capitalize rounded-md px-2 py-1 justify-center inline-flex items-center ${badgeColor}`}
     >
-      {status.split("_").join(" ").toLowerCase()}
+      {status === DomainStatus.SUCCESS
+        ? "verified"
+        : status.split("_").join(" ").toLowerCase()}
     </div>
   );
 };
