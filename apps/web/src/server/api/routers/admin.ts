@@ -14,6 +14,9 @@ import { toPlainHtml } from "~/server/utils/email-content";
 import { sesRegionSchema } from "~/lib/zod/ses-setting-schema";
 import { APP_SETTING_KEYS } from "~/lib/app-settings";
 import { AppSettingsService } from "~/server/service/app-settings-service";
+import { TRPCError } from "@trpc/server";
+import { TeamPlanService } from "~/server/service/team-plan-service";
+import { TeamService } from "~/server/service/team-service";
 
 const waitlistUserSelection = {
   id: true,
@@ -38,6 +41,21 @@ const teamAdminSelection = {
   id: true,
   name: true,
   plan: true,
+  isActive: true,
+  billingPlanId: true,
+  billingPlan: { select: { id: true, name: true, isDefault: true } },
+  // The newest subscription decides the current period, same as the billing pages.
+  subscription: {
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    select: {
+      id: true,
+      status: true,
+      paymentMethod: true,
+      currentPeriodStart: true,
+      currentPeriodEnd: true,
+    },
+  },
   apiRateLimit: true,
   dailyEmailLimit: true,
   isBlocked: true,
@@ -424,6 +442,51 @@ export const adminRouter = createTRPCRouter({
       return team ?? null;
     }),
 
+  /**
+   * Gives a team a plan from the catalog (or the legacy unlimited plan), optionally until a date.
+   * Cloud only: the plan catalog and subscriptions do not exist on self-hosted installs.
+   */
+  assignTeamPlan: adminProcedure
+    .input(
+      z.object({
+        teamId: z.number().int().positive(),
+        target: z.discriminatedUnion("kind", [
+          z.object({ kind: z.literal("catalog"), planId: z.string().min(1) }),
+          z.object({ kind: z.literal("legacy-unlimited") }),
+        ]),
+        endsAt: z.coerce.date().nullable(),
+        note: z.string().trim().max(200).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!env.NEXT_PUBLIC_IS_CLOUD) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const result = await TeamPlanService.assign({
+        ...input,
+        actor: {
+          id: ctx.session.user.id,
+          email: ctx.session.user.email ?? null,
+        },
+      });
+
+      // The team is cached; without this the old limits would stay until the cache expires.
+      await TeamService.refreshTeamCache(input.teamId);
+
+      return result;
+    }),
+
+  getTeamPlanHistory: adminProcedure
+    .input(z.object({ teamId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      if (!env.NEXT_PUBLIC_IS_CLOUD) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      return TeamPlanService.history(input.teamId);
+    }),
+
   updateTeamSettings: adminProcedure
     .input(
       z.object({
@@ -432,7 +495,8 @@ export const adminRouter = createTRPCRouter({
         // null removes the override so the team follows its plan
         dailyEmailLimit: z.number().int().min(0).max(10_000_000).nullable(),
         isBlocked: z.boolean(),
-        plan: z.enum(["FREE", "BASIC"]),
+        // Optional: plan changes now go through assignTeamPlan, which also sets the period.
+        plan: z.enum(["FREE", "BASIC"]).optional(),
       }),
     )
     .mutation(async ({ input }) => {

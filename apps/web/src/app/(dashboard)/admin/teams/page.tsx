@@ -19,19 +19,14 @@ import { Switch } from "@usesend/ui/src/switch";
 import Spinner from "@usesend/ui/src/spinner";
 import { toast } from "@usesend/ui/src/toaster";
 import { Badge } from "@usesend/ui/src/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@usesend/ui/src/select";
 import { formatDistanceToNow } from "date-fns";
 
 import { api } from "~/trpc/react";
 import type { AppRouter } from "~/server/api/root";
 import type { inferRouterOutputs } from "@trpc/server";
 import { isCloud } from "~/utils/common";
+import { describeTeamPlan } from "~/lib/plan-label";
+import { PlanCard } from "./plan-card";
 
 const searchSchema = z.object({
   query: z
@@ -49,7 +44,6 @@ const updateSchema = z.object({
   apiRateLimit: z.coerce.number().int().min(1).max(10_000),
   dailyEmailLimit: z.number().int().min(0).max(10_000_000).nullable(),
   isBlocked: z.boolean(),
-  plan: z.enum(["FREE", "BASIC"]),
 });
 
 type UpdateInput = z.infer<typeof updateSchema>;
@@ -69,7 +63,6 @@ export default function AdminTeamsPage() {
       apiRateLimit: 1,
       dailyEmailLimit: null,
       isBlocked: false,
-      plan: "FREE",
     },
   });
 
@@ -79,7 +72,6 @@ export default function AdminTeamsPage() {
         apiRateLimit: team.apiRateLimit,
         dailyEmailLimit: team.dailyEmailLimit,
         isBlocked: team.isBlocked,
-        plan: team.plan,
       });
     }
   }, [team, updateForm]);
@@ -114,7 +106,6 @@ export default function AdminTeamsPage() {
         apiRateLimit: updated.apiRateLimit,
         dailyEmailLimit: updated.dailyEmailLimit,
         isBlocked: updated.isBlocked,
-        plan: updated.plan,
       });
       toast.success("Team settings updated");
     },
@@ -191,7 +182,7 @@ export default function AdminTeamsPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">Plan: {team.plan}</Badge>
+              <Badge variant="outline">Plan: {describeTeamPlan(team).label}</Badge>
               <Badge variant={team.isBlocked ? "destructive" : "outline"}>
                 {team.isBlocked ? "Blocked" : "Active"}
               </Badge>
@@ -250,6 +241,11 @@ export default function AdminTeamsPage() {
             </p>
           </div>
 
+          <PlanCard
+            team={team}
+            onChanged={() => findTeam.mutate({ query: String(team.id) })}
+          />
+
           <div className="rounded-lg border p-6">
             <Form {...updateForm}>
               <form onSubmit={updateForm.handleSubmit(onUpdateSubmit)} className="grid gap-6 lg:grid-cols-2">
@@ -305,31 +301,6 @@ export default function AdminTeamsPage() {
                       <FormDescription>
                         Leave empty to use the daily limit of the team's plan.
                       </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={updateForm.control}
-                  name="plan"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Plan</FormLabel>
-                      <FormControl>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={updateTeam.isPending}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select plan" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="FREE">Free</SelectItem>
-                            <SelectItem value="BASIC">Basic</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -552,3 +552,17 @@ model WebhookCall {
   @@index([teamId, webhookId, status])
   @@index([createdAt(sort: Desc)])
 }
+
+// Who changed what in the admin area. There are no foreign keys on purpose, so the history
+// survives when a team or user is deleted.
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  actorUserId Int?
+  actorEmail  String?
+  action      String
+  teamId      Int?
+  details     Json
+
+  @@index([teamId, createdAt])
+}
