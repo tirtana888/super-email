@@ -732,11 +732,18 @@ export async function isDomainVerificationDue(domain: Domain) {
 
   const now = Date.now();
   const lastCheckedAt = verificationState.lastCheckedAt?.getTime() ?? 0;
-  const intervalMs =
-    verificationState.hasEverVerified ||
-    VERIFIED_DOMAIN_STATUSES.has(domain.status)
-      ? DOMAIN_VERIFIED_RECHECK_MS
-      : DOMAIN_UNVERIFIED_RECHECK_MS;
+  // A domain that is still actively being verified (for example DKIM succeeded
+  // but the MAIL FROM/SPF record has not been detected yet) must keep being
+  // rechecked on the short cadence, even if it has succeeded before or is
+  // currently marked SUCCESS overall. The long, 30-day cadence is only for a
+  // domain that has nothing left to check (isVerifying is false).
+  const isSettled =
+    !domain.isVerifying &&
+    (verificationState.hasEverVerified ||
+      VERIFIED_DOMAIN_STATUSES.has(domain.status));
+  const intervalMs = isSettled
+    ? DOMAIN_VERIFIED_RECHECK_MS
+    : DOMAIN_UNVERIFIED_RECHECK_MS;
 
   if (!verificationState.lastCheckedAt) {
     return true;

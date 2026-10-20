@@ -375,8 +375,11 @@ describe("domain-service", () => {
     await expect(isDomainVerificationDue(domain)).resolves.toBe(true);
   });
 
-  it("uses a 30 day cadence after a domain has been verified", async () => {
-    const domain = createDomain({ status: DomainStatus.FAILED });
+  it("uses a 30 day cadence once a domain is fully settled (nothing left to verify)", async () => {
+    const domain = createDomain({
+      status: DomainStatus.FAILED,
+      isVerifying: false,
+    });
     mockRedis.mget.mockResolvedValue([
       new Date(
         Date.now() - DOMAIN_VERIFIED_RECHECK_MS + 5 * 60 * 1000,
@@ -390,6 +393,37 @@ describe("domain-service", () => {
     mockRedis.mget.mockResolvedValue([
       new Date(
         Date.now() - DOMAIN_VERIFIED_RECHECK_MS - 5 * 60 * 1000,
+      ).toISOString(),
+      DomainStatus.SUCCESS,
+      "1",
+    ]);
+
+    await expect(isDomainVerificationDue(domain)).resolves.toBe(true);
+  });
+
+  it("keeps the short 6 hour cadence while a domain is still verifying, even if it is overall SUCCESS and has verified before", async () => {
+    // Regression test: a domain whose DKIM succeeded (overall status SUCCESS)
+    // but whose MAIL FROM/SPF check is still failing stays isVerifying=true.
+    // Before this fix, isDomainVerificationDue used the 30-day cadence here
+    // just because the domain was once/currently SUCCESS, so the hourly job
+    // would skip it for up to 30 days and the "Verify again" button appeared
+    // to do nothing.
+    const domain = createDomain({
+      status: DomainStatus.SUCCESS,
+      isVerifying: true,
+    });
+    mockRedis.mget.mockResolvedValue([
+      new Date(Date.now() - 30 * 60 * 1000).toISOString(), // checked 30 min ago
+      DomainStatus.SUCCESS,
+      "1", // hasEverVerified
+    ]);
+
+    // Well within the old 30-day window, but past the 6 hour window would be due.
+    await expect(isDomainVerificationDue(domain)).resolves.toBe(false);
+
+    mockRedis.mget.mockResolvedValue([
+      new Date(
+        Date.now() - DOMAIN_UNVERIFIED_RECHECK_MS - 5 * 60 * 1000,
       ).toISOString(),
       DomainStatus.SUCCESS,
       "1",

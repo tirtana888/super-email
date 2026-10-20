@@ -7,11 +7,13 @@ import {
   domainProcedure,
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
+import { logger } from "~/server/logger/log";
 import {
   createDomain,
   deleteDomain,
   getDomain,
   getDomains,
+  refreshDomainVerification,
   updateDomain,
 } from "~/server/service/domain-service";
 import { sendEmail } from "~/server/service/email-service";
@@ -41,10 +43,25 @@ export const domainRouter = createTRPCRouter({
     }),
 
   startVerification: domainProcedure.mutation(async ({ ctx, input }) => {
+    // Mark it as verifying immediately so the UI can show "Verifying..." right
+    // away, then run the real check now instead of only waiting for the
+    // hourly background job, which can skip an already-verified domain for up
+    // to 30 days.
     await ctx.db.domain.update({
       where: { id: input.id },
       data: { isVerifying: true },
     });
+
+    try {
+      await refreshDomainVerification(input.id);
+    } catch (error) {
+      // The background job will retry; a transient AWS/DNS error here should
+      // not stop the user from seeing their click was received.
+      logger.error(
+        { err: error, domainId: input.id },
+        "[domain.startVerification]: Immediate verification check failed, the background job will retry",
+      );
+    }
   }),
 
   domains: teamProcedure.query(async ({ ctx }) => {
