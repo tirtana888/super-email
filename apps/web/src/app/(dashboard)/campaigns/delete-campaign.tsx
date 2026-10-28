@@ -47,8 +47,8 @@ export const DeleteCampaign: React.FC<{
       isLoading={deleteCampaignMutation.isPending}
       onConfirm={onCampaignDelete}
       trigger={
-        <Button variant="ghost" size="sm" className="p-0 hover:bg-transparent">
-          <Trash2 className="h-[18px] w-[18px] text-red/80" />
+        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-red" title="Delete">
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       }
       confirmLabel="Delete Campaign"

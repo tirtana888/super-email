@@ -56,10 +56,11 @@ export const EditContactBook: React.FC<{
       <Button
         variant="ghost"
         size="sm"
-        className="p-0 hover:bg-transparent"
+        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+        title="Edit"
         onClick={(e) => e.stopPropagation()}
       >
-        <Edit className="h-4 w-4 text-foreground/80 hover:text-foreground/70" />
+        <Edit className="h-3.5 w-3.5" />
       </Button>
     ) : null);
 

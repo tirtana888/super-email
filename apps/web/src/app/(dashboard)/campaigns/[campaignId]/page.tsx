@@ -68,39 +68,28 @@ export default function CampaignDetailsPage({
     return <div>Campaign not found</div>;
   }
 
+  const sentCount = campaign.sent ?? 0;
   const deliveredCount = campaign.delivered ?? 0;
-  const openedCount = campaign.opened ?? 0;
-  const clickedCount = campaign.clicked ?? 0;
-  const unsubscribedCount = campaign.unsubscribed ?? 0;
-  const deliveredDenominator = deliveredCount > 0 ? deliveredCount : 0;
-  const percentageOfDelivered = (value: number) =>
-    deliveredDenominator > 0 ? (value / deliveredDenominator) * 100 : 0;
+  const rateOf = (part: number, whole: number) =>
+    whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : "—";
 
-  const statisticsRows = [
+  // Delivery and bounces are counted against what was sent; engagement and
+  // unsubscribes against what was delivered.
+  const kpis = [
     {
-      status: "delivered",
-      count: deliveredCount,
-      percentage: deliveredDenominator > 0 ? 100 : 0,
+      label: "Recipients",
+      value: (campaign.total ?? 0).toLocaleString(),
+      detail:
+        (campaign.total ?? 0) > 0
+          ? `${sentCount.toLocaleString()} sent · ${rateOf(sentCount, campaign.total ?? 0)}`
+          : "Not sent yet",
     },
-    {
-      status: "unsubscribed",
-      count: unsubscribedCount,
-      percentage: percentageOfDelivered(unsubscribedCount),
-    },
-    {
-      status: "clicked",
-      count: clickedCount,
-      percentage: percentageOfDelivered(clickedCount),
-    },
-    {
-      status: "opened",
-      count: openedCount,
-      percentage: percentageOfDelivered(openedCount),
-    },
-  ];
-
-  const total = campaign.total ?? 0;
-  const processed = campaign.sent ?? 0;
+    { label: "Delivered", value: rateOf(deliveredCount, sentCount), detail: `${deliveredCount.toLocaleString()} delivered` },
+    { label: "Open rate", value: rateOf(campaign.opened ?? 0, deliveredCount), detail: `${(campaign.opened ?? 0).toLocaleString()} opened` },
+    { label: "Click rate", value: rateOf(campaign.clicked ?? 0, deliveredCount), detail: `${(campaign.clicked ?? 0).toLocaleString()} clicked` },
+    { label: "Bounce rate", value: rateOf(campaign.bounced ?? 0, sentCount), detail: `${(campaign.bounced ?? 0).toLocaleString()} bounced` },
+    { label: "Unsubscribed", value: rateOf(campaign.unsubscribed ?? 0, deliveredCount), detail: `${(campaign.unsubscribed ?? 0).toLocaleString()} unsubscribed · ${(campaign.complained ?? 0).toLocaleString()} spam` },
+  ];
 
   return (
     <div className="container mx-auto">
@@ -134,56 +123,28 @@ export default function CampaignDetailsPage({
         )}
       </div>
 
-      <div className="mt-10">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader className="space-y-4">
-              <div className="flex flex-col gap-1">
-                <CardTitle className="text-sm font-mono">Statistics</CardTitle>
-                {total > 0 ? (
-                  <div className="text-sm text-muted-foreground font-mono">
-                    {processed.toLocaleString()} of {total.toLocaleString()}{" "}
-                    processed
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    No recipients processed yet
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {statisticsRows.map((row, index) => (
-                <div
-                  key={row.status}
-                  className={`flex items-center justify-between gap-4 px-0 pb-3 ${
-                    index !== statisticsRows.length - 1
-                      ? "border-b border-dashed border-border"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <CampaignStatusIndicator status={row.status} />
-                    <div>
-                      <div className="text-sm capitalize">{row.status}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-mono">{row.count}</div>
-                    {row.status !== "delivered" ? (
-                      <div className="text-xs text-muted-foreground">
-                        {row.percentage.toFixed(1)}% of delivered
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+      <section
+        aria-label="Campaign results"
+        className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border md:grid-cols-3 2xl:grid-cols-6"
+      >
+        {kpis.map((kpi) => (
+          <div key={kpi.label} className="flex min-w-0 flex-col bg-card px-4 py-3">
+            <span className="text-xs font-medium text-muted-foreground">{kpi.label}</span>
+            <span className="mt-1.5 text-2xl font-semibold leading-none tabular-nums tracking-tight">
+              {kpi.value}
+            </span>
+            <span className="mt-1.5 truncate text-xs tabular-nums text-muted-foreground">
+              {kpi.detail}
+            </span>
+          </div>
+        ))}
+      </section>
 
+      <div className="mt-6">
+        <div className="grid gap-6">
           <Card>
             <CardHeader className="flex gap-2">
-              <CardTitle className="text-sm font-mono">Live activity</CardTitle>
+              <CardTitle className="text-sm font-semibold">Live activity</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex h-[300px] flex-col">
@@ -247,10 +208,10 @@ export default function CampaignDetailsPage({
       </div>
 
       {campaign.html && (
-        <div className=" rounded-lg  mt-16">
+        <div className="mt-8">
           <H2 className="mb-4">Email</H2>
 
-          <div className="p-2 rounded-lg border shadow  flex flex-col gap-4 w-full">
+          <div className="flex w-full flex-col gap-4 rounded-md border bg-card p-2">
             <div className="flex flex-col gap-3 px-4 py-1">
               <div className=" flex text-sm">
                 <div className="w-[70px] text-muted-foreground">Subject</div>
@@ -288,29 +249,3 @@ export default function CampaignDetailsPage({
   );
 }
 
-const CampaignStatusIndicator: React.FC<{ status: string }> = ({ status }) => {
-  let colorClass = "bg-gray";
-
-  switch (status) {
-    case "delivered":
-      colorClass = "bg-green";
-      break;
-    case "bounced":
-    case "unsubscribed":
-      colorClass = "bg-red";
-      break;
-    case "clicked":
-      colorClass = "bg-blue";
-      break;
-    case "opened":
-      colorClass = "bg-purple";
-      break;
-    case "complained":
-      colorClass = "bg-yellow";
-      break;
-    default:
-      colorClass = "bg-gray";
-  }
-
-  return <div className={`h-2.5 w-2.5 rounded-[2px] ${colorClass}`} />;
-};

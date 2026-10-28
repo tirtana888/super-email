@@ -75,7 +75,13 @@ export const campaignRouter = createTRPCRouter({
           total: true,
           sent: true,
           delivered: true,
+          opened: true,
+          clicked: true,
+          bounced: true,
+          complained: true,
           unsubscribed: true,
+          contactBookId: true,
+          lastSentAt: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -86,7 +92,31 @@ export const campaignRouter = createTRPCRouter({
 
       const [campaigns, count] = await Promise.all([campaignsP, countP]);
 
-      return { campaigns, totalPage: Math.ceil(count / limit) };
+      return { campaigns, totalPage: Math.ceil(count / limit), total: count };
+    }),
+
+  // Campaigns per status for the status tabs; honours the search, not the status.
+  campaignStatusCounts: teamProcedure
+    .input(z.object({ search: z.string().optional().nullable() }))
+    .query(async ({ ctx: { db, team }, input }) => {
+      const rows = await db.campaign.groupBy({
+        by: ["status"],
+        where: {
+          teamId: team.id,
+          ...(input.search
+            ? {
+                OR: [
+                  { name: { contains: input.search, mode: "insensitive" } },
+                  { subject: { contains: input.search, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+        },
+        _count: { _all: true },
+      });
+      return Object.fromEntries(rows.map((r) => [r.status, r._count._all])) as Partial<
+        Record<CampaignStatus, number>
+      >;
     }),
 
   createCampaign: teamProcedure

@@ -16,7 +16,7 @@ import {
 type ContactBookDbClient = Pick<typeof db, "contactBook">;
 
 export async function getContactBooks(teamId: number, search?: string) {
-  return db.contactBook.findMany({
+  const books = await db.contactBook.findMany({
     where: {
       teamId,
       ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
@@ -38,7 +38,25 @@ export async function getContactBooks(teamId: number, search?: string) {
         select: { contacts: true },
       },
     },
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
   });
+
+  // Subscribed contacts per book, so the list can show who will receive email.
+  const subscribed = books.length
+    ? await db.contact.groupBy({
+        by: ["contactBookId"],
+        where: { contactBookId: { in: books.map((b) => b.id) }, subscribed: true },
+        _count: { _all: true },
+      })
+    : [];
+  const subscribedByBook = new Map(
+    subscribed.map((row) => [row.contactBookId, row._count._all]),
+  );
+
+  return books.map((book) => ({
+    ...book,
+    subscribedCount: subscribedByBook.get(book.id) ?? 0,
+  }));
 }
 
 export async function createContactBook(
