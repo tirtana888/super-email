@@ -23,17 +23,17 @@ export default function ApiList() {
 
   return (
     <div className="mt-10">
-      <div className="border rounded-xl shadow">
+      <div className="border rounded-md">
         <Table className="">
           <TableHeader className="">
             <TableRow className=" bg-muted/30">
-              <TableHead className="rounded-tl-xl">Name</TableHead>
+              <TableHead className="rounded-tl-md">Name</TableHead>
               <TableHead>Token</TableHead>
               <TableHead>Permission</TableHead>
               <TableHead>Domain Access</TableHead>
               <TableHead>Last used</TableHead>
               <TableHead>Created at</TableHead>
-              <TableHead className="rounded-tr-xl">Action</TableHead>
+              <TableHead className="rounded-tr-md">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -15,8 +15,11 @@ export default function ApiKeysPage({
 
   return (
     <div>
-      <h1 className="font-bold text-lg">Settings</h1>
-      <div className="flex gap-4 mt-4">
+      <h1 className="text-lg font-semibold tracking-tight">Settings</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Plan, usage, billing and team members.
+      </p>
+      <div className="mt-5 flex gap-1 border-b">
         {isCloud() ? (
           <SettingsNavButton href="/settings">Usage</SettingsNavButton>
         ) : null}

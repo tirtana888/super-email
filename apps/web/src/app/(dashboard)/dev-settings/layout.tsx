@@ -12,9 +12,12 @@ export default function ApiKeysPage({
 }) {
   return (
     <div>
-      <H1>Developer Settings</H1>
-      <div className="flex gap-4 mt-4">
-        <SettingsNavButton href="/dev-settings">API Keys</SettingsNavButton>
+      <H1>Developer settings</H1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        API keys and SMTP credentials for sending from your code.
+      </p>
+      <div className="mt-5 flex gap-1 border-b">
+        <SettingsNavButton href="/dev-settings">API keys</SettingsNavButton>
         <SettingsNavButton href="/dev-settings/smtp">SMTP</SettingsNavButton>
       </div>
       <div className="mt-8">{children}</div>

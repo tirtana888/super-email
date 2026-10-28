@@ -1,31 +1,36 @@
 import { DomainStatus } from "@prisma/client";
+import { StatusDot, type StatusTone } from "@usesend/ui/src/status-dot";
+
+export function domainStatusTone(status: DomainStatus): StatusTone {
+  switch (status) {
+    case DomainStatus.SUCCESS:
+      return "ok";
+    case DomainStatus.FAILED:
+      return "bad";
+    case DomainStatus.TEMPORARY_FAILURE:
+      return "warn";
+    case DomainStatus.PENDING:
+    case DomainStatus.NOT_STARTED:
+      return "pending";
+    default:
+      return "neutral";
+  }
+}
+
+export function domainStatusLabel(status: DomainStatus) {
+  if (status === DomainStatus.SUCCESS) {
+    return "Verified";
+  }
+  const label = status.split("_").join(" ").toLowerCase();
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 export const DomainStatusBadge: React.FC<{ status: DomainStatus }> = ({
   status,
 }) => {
-  let badgeColor = "bg-gray/10 text-gray border-gray/10"; // Default color
-  switch (status) {
-    case DomainStatus.SUCCESS:
-      badgeColor = "bg-green/15 text-green border border-green/25";
-      break;
-    case DomainStatus.FAILED:
-      badgeColor = "bg-red/10 text-red border border-red/10";
-      break;
-    case DomainStatus.TEMPORARY_FAILURE:
-    case DomainStatus.PENDING:
-      badgeColor = "bg-yellow/20 text-yellow border border-yellow/10";
-      break;
-    default:
-      badgeColor = "bg-gray/70 text-gray border border-gray/20";
-  }
-
   return (
-    <div
-      className={` text-center w-[120px] capitalize rounded-md py-1 justify-center flex items-center ${badgeColor}`}
-    >
-      <span className="text-xs">
-        {status === "SUCCESS" ? "Verified" : status.toLowerCase()}
-      </span>
-    </div>
+    <StatusDot tone={domainStatusTone(status)}>
+      {domainStatusLabel(status)}
+    </StatusDot>
   );
 };

@@ -13,8 +13,13 @@ export default function Dashboard() {
   return (
     <div>
       <div className="w-full">
-        <div className="flex justify-between items-center mb-10">
-          <H1>Metrics</H1>
+        <div className="flex justify-between items-start gap-4 mb-8">
+          <div>
+            <H1>Metrics</H1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Delivery and reputation for your sending domains.
+            </p>
+          </div>
           <DashboardFilters
             days={days ?? "30"}
             setDays={setDays}

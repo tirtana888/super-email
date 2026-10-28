@@ -1,86 +1,57 @@
 import { EmailStatus } from "@prisma/client";
+import { StatusDot, type StatusTone } from "@usesend/ui/src/status-dot";
 
-export const EmailStatusBadge: React.FC<{ status: EmailStatus }> = ({
-  status,
-}) => {
-  let badgeColor = "bg-gray-700/10 text-gray-400 border border-gray-400/10"; // Default color
+function statusTone(status: EmailStatus | string): StatusTone {
   switch (status) {
     case "DELIVERED":
-      badgeColor = "bg-green/15 text-green border border-green/20";
-      break;
+      return "ok";
     case "BOUNCED":
     case "FAILED":
-      badgeColor = "bg-red/15 text-red border border-red/20";
-      break;
-    case "CLICKED":
-      badgeColor = "bg-blue/15 text-blue border border-blue/20";
-      break;
-    case "OPENED":
-      badgeColor = "bg-purple/15 text-purple border border-purple/20";
-      break;
+    case "REJECTED":
+    case "RENDERING_FAILURE":
+      return "bad";
     case "COMPLAINED":
-      badgeColor = "bg-yellow/15 text-yellow border border-yellow/20";
-      break;
     case "DELIVERY_DELAYED":
-      badgeColor = "bg-yellow/15 text-yellow border border-yellow/20";
-      break;
-
+    case "SUPPRESSED":
+      return "warn";
+    case "OPENED":
+    case "CLICKED":
+      return "info";
+    case "SCHEDULED":
+      return "pending";
     default:
-      badgeColor = "bg-gray-700/10 text-gray-400 border border-gray-400/10"; // Default color
+      return "neutral";
   }
+}
 
-  return (
-    <div
-      className={` text-center w-[130px] rounded capitalize py-1 text-xs ${badgeColor}`}
-    >
-      {status.toLowerCase().split("_").join(" ")}
-    </div>
-  );
+const iconDotClass: Record<StatusTone, string> = {
+  ok: "bg-green",
+  bad: "bg-red",
+  warn: "bg-yellow",
+  info: "bg-blue",
+  pending: "bg-transparent ring-[1.5px] ring-inset ring-gray",
+  neutral: "bg-gray",
+};
+
+function statusLabel(status: EmailStatus | string) {
+  const label = status.toLowerCase().split("_").join(" ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+export const EmailStatusBadge: React.FC<{ status: EmailStatus | string }> = ({
+  status,
+}) => {
+  return <StatusDot tone={statusTone(status)}>{statusLabel(status)}</StatusDot>;
 };
 
 export const EmailStatusIcon: React.FC<{ status: EmailStatus }> = ({
   status,
 }) => {
-  let outsideColor = "bg-gray/30"; // Default
-  let insideColor = "bg-gray"; // Default
-
-  switch (status) {
-    case "DELIVERED":
-      outsideColor = "bg-green/30";
-      insideColor = "bg-green";
-      break;
-    case "BOUNCED":
-    case "FAILED":
-      outsideColor = "bg-red/30";
-      insideColor = "bg-red";
-      break;
-    case "CLICKED":
-      outsideColor = "bg-blue/30";
-      insideColor = "bg-blue";
-      break;
-    case "OPENED":
-      outsideColor = "bg-purple/30";
-      insideColor = "bg-purple";
-      break;
-    case "DELIVERY_DELAYED":
-      outsideColor = "bg-yellow/30";
-      insideColor = "bg-yellow";
-      break;
-    case "COMPLAINED":
-      outsideColor = "bg-yellow/30";
-      insideColor = "bg-yellow";
-      break;
-    default:
-      // Using the default values defined above
-      outsideColor = "bg-gray/30";
-      insideColor = "bg-gray";
-  }
-
   return (
-    <div
-      className={`flex justify-center items-center p-1.5 ${outsideColor} rounded-full`}
-    >
-      <div className={`h-2 w-2 rounded-full ${insideColor}`}></div>
+    <div className="flex h-5 w-5 items-center justify-center">
+      <div
+        className={`h-2.5 w-2.5 rounded-full ${iconDotClass[statusTone(status)]}`}
+      ></div>
     </div>
   );
 };

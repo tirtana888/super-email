@@ -539,7 +539,7 @@ const sidebarMenuButtonVariants = cva(
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
-        default: "h-7 text-[13px] relative [&>svg]:[stroke-width:1.5] [&>svg]:opacity-70 [&>svg]:transition-[transform,opacity,color,filter] [&>svg]:duration-200 hover:[&>svg]:opacity-100 hover:[&>svg]:-translate-y-px hover:[&>svg]:scale-105 data-[active=true]:[&>svg]:opacity-100 dark:data-[active=true]:[&>svg]:text-primary-light dark:data-[active=true]:[&>svg]:drop-shadow-[0_0_6px_hsl(var(--primary-light)/0.55)] data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:bottom-1.5 data-[active=true]:before:w-0.5 data-[active=true]:before:rounded-full data-[active=true]:before:bg-primary motion-reduce:[&>svg]:transition-none motion-reduce:hover:[&>svg]:translate-y-0 motion-reduce:hover:[&>svg]:scale-100",
+        default: "h-7 text-[13px] relative [&>svg]:[stroke-width:1.5] [&>svg]:opacity-70 [&>svg]:transition-opacity hover:[&>svg]:opacity-100 data-[active=true]:[&>svg]:opacity-100 data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:bottom-1.5 data-[active=true]:before:w-0.5 data-[active=true]:before:rounded-full data-[active=true]:before:bg-primary motion-reduce:[&>svg]:transition-none",
         sm: "h-7 text-xs",
         lg: "h-12 text-sm group-data-[collapsible=icon]:!p-0",
       },

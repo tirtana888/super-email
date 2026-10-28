@@ -91,7 +91,7 @@ export function ReputationMetrics({ days, domain }: ReputationMetricsProps) {
   return (
     <TooltipProvider>
       <div className="flex flex-col sm:flex-row gap-10 w-full">
-        <div className="w-full sm:w-1/2 border rounded-xl shadow p-4">
+        <div className="w-full sm:w-1/2 border rounded-md p-4">
           <div className="flex justify-between">
             <div className=" flex items-center gap-2">
               <div className="text-muted-foreground font-mono">Bounce Rate</div>
@@ -240,7 +240,7 @@ export function ReputationMetrics({ days, domain }: ReputationMetricsProps) {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="w-full sm:w-1/2 border rounded-xl shadow p-4">
+        <div className="w-full sm:w-1/2 border rounded-md p-4">
           <div className=" flex items-center gap-2">
             <div className=" text-muted-foreground font-mono">
               Complaint Rate

@@ -12,7 +12,7 @@ export default function SuppressionStats() {
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="flex flex-col gap-2 rounded-lg border p-4 shadow"
+            className="flex flex-col gap-2 rounded-md border bg-card p-4"
           >
             <div className="h-4 bg-muted animate-pulse rounded mb-1" />
             <div className="h-8 bg-muted animate-pulse rounded" />
@@ -28,28 +28,28 @@ export default function SuppressionStats() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-      <div className="flex flex-col gap-2 rounded-lg border p-4 shadow">
-        <p className="font-semibold mb-1">Total Suppressions</p>
-        <div className="text-2xl font-mono">{totalSuppressions}</div>
+      <div className="flex flex-col gap-2 rounded-md border bg-card p-4">
+        <p className="text-xs font-medium text-muted-foreground">Total</p>
+        <div className="text-2xl font-semibold tabular-nums">{totalSuppressions}</div>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-lg border p-4 shadow">
-        <p className="font-semibold mb-1">Hard Bounces</p>
-        <div className="text-2xl font-mono text-red">
+      <div className="flex flex-col gap-2 rounded-md border bg-card p-4">
+        <p className="text-xs font-medium text-muted-foreground">Hard bounces</p>
+        <div className="text-2xl font-semibold tabular-nums">
           {stats?.HARD_BOUNCE ?? 0}
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-lg border p-4 shadow">
-        <p className="font-semibold mb-1">Complaints</p>
-        <div className="text-2xl font-mono text-yellow">
+      <div className="flex flex-col gap-2 rounded-md border bg-card p-4">
+        <p className="text-xs font-medium text-muted-foreground">Complaints</p>
+        <div className="text-2xl font-semibold tabular-nums">
           {stats?.COMPLAINT ?? 0}
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-lg border p-4 shadow">
-        <p className="font-semibold mb-1">Manual</p>
-        <div className="text-2xl font-mono text-blue">{stats?.MANUAL ?? 0}</div>
+      <div className="flex flex-col gap-2 rounded-md border bg-card p-4">
+        <p className="text-xs font-medium text-muted-foreground">Manual</p>
+        <div className="text-2xl font-semibold tabular-nums">{stats?.MANUAL ?? 0}</div>
       </div>
     </div>
   );

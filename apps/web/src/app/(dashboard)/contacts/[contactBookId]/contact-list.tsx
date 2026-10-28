@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@usesend/ui/src/button";
+import { StatusDot } from "@usesend/ui/src/status-dot";
 import {
   Select,
   SelectContent,
@@ -239,10 +240,10 @@ export default function ContactList({
           <Table className="">
             <TableHeader className="">
               <TableRow className=" bg-muted/30">
-                <TableHead className="rounded-tl-xl">Email</TableHead>
+                <TableHead className="rounded-tl-md">Email</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="">Created At</TableHead>
-                <TableHead className="rounded-tr-xl">Actions</TableHead>
+                <TableHead className="rounded-tr-md">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -288,19 +289,13 @@ export default function ContactList({
                       </TableCell>
                       <TableCell>
                         {contact.subscribed ? (
-                          <div className="text-center w-[130px] rounded capitalize py-1 text-xs bg-green/15 text-green border border-green/25">
-                            Subscribed
-                          </div>
+                          <StatusDot tone="ok">Subscribed</StatusDot>
                         ) : isPendingConfirmation ? (
-                          <div className="text-center w-[130px] rounded capitalize py-1 text-xs bg-yellow/20 text-yellow border border-yellow/20">
-                            Pending
-                          </div>
+                          <StatusDot tone="pending">Pending</StatusDot>
                         ) : (
                           <Tooltip>
                             <TooltipTrigger>
-                              <div className="text-center w-[130px] rounded capitalize py-1 text-xs bg-red/10 text-red border border-red/10">
-                                Unsubscribed
-                              </div>
+                              <StatusDot tone="neutral">Unsubscribed</StatusDot>
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>

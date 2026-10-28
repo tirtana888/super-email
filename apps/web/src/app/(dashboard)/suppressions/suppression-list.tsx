@@ -28,7 +28,7 @@ import RemoveSuppressionDialog from "./remove-suppression";
 import Spinner from "@usesend/ui/src/spinner";
 
 const reasonLabels = {
-  HARD_BOUNCE: "Hard Bounce",
+  HARD_BOUNCE: "Hard bounce",
   COMPLAINT: "Complaint",
   MANUAL: "Manual",
 } as const;
@@ -145,14 +145,14 @@ export default function SuppressionList() {
       </div>
 
       {/* Table */}
-      <div className="flex flex-col rounded-xl border shadow">
+      <div className="flex flex-col rounded-md border">
         <Table className="">
           <TableHeader className="">
             <TableRow className=" bg-muted/30">
-              <TableHead className="rounded-tl-xl">Email</TableHead>
+              <TableHead className="rounded-tl-md">Email</TableHead>
               <TableHead>Reason</TableHead>
               <TableHead>Added</TableHead>
-              <TableHead className="rounded-tr-xl">Actions</TableHead>
+              <TableHead className="rounded-tr-md">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -178,17 +178,19 @@ export default function SuppressionList() {
                     {suppression.email}
                   </TableCell>
                   <TableCell>
-                    <div
-                      className={`text-center w-[130px] rounded capitalize py-1 text-xs ${
-                        suppression.reason === "HARD_BOUNCE"
-                          ? "bg-red/15 text-red border border-red/20"
-                          : suppression.reason === "COMPLAINT"
-                            ? "bg-yellow/15 text-yellow border border-yellow/20"
-                            : "bg-blue/15 text-blue border border-blue/20"
-                      }`}
-                    >
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap text-foreground">
+                      <span
+                        aria-hidden
+                        className={`h-[7px] w-[7px] shrink-0 rounded-full ${
+                          suppression.reason === "HARD_BOUNCE"
+                            ? "bg-red"
+                            : suppression.reason === "COMPLAINT"
+                              ? "bg-yellow"
+                              : "bg-gray"
+                        }`}
+                      />
                       {reasonLabels[suppression.reason]}
-                    </div>
+                    </span>
                   </TableCell>
 
                   <TableCell className="text-muted-foreground">

@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusDot } from "@usesend/ui/src/status-dot";
 import {
   Table,
   TableHeader,
@@ -38,11 +39,11 @@ export default function TeamMembersList() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
-              <TableHead className="rounded-tl-xl">User</TableHead>
+              <TableHead className="rounded-tl-md">User</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
-              <TableHead className="rounded-tr-xl">Actions</TableHead>
+              <TableHead className="rounded-tr-md">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -67,9 +68,7 @@ export default function TeamMembersList() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-center w-[100px] rounded capitalize py-1 text-xs bg-green/15 text-green border border-green/25">
-                      Active
-                    </div>
+                    <StatusDot tone="ok">Active</StatusDot>
                   </TableCell>
                   <TableCell>
                     {formatDistanceToNow(new Date(member.user.createdAt), {
@@ -122,9 +121,7 @@ export default function TeamMembersList() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-center w-[100px] rounded capitalize py-1 text-xs bg-yellow/15 text-yellow border border-yellow/25">
-                        Pending
-                      </div>
+                      <StatusDot tone="pending">Pending</StatusDot>
                     </TableCell>
                     <TableCell>
                       {formatDistanceToNow(new Date(invite.createdAt), {

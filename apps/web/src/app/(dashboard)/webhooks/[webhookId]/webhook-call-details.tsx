@@ -23,7 +23,7 @@ export function WebhookCallDetails({ callId }: { callId: string }) {
         <div className="flex flex-row items-center justify-between mb-4">
           <h2 className="text-base font-medium">Call Details</h2>
         </div>
-        <div className="flex-1 rounded-xl border shadow p-6 flex items-center justify-center">
+        <div className="flex-1 rounded-md border p-6 flex items-center justify-center">
           <p className="text-muted-foreground text-sm">
             Loading call details...
           </p>
@@ -87,7 +87,7 @@ export function WebhookCallDetails({ callId }: { callId: string }) {
           </Button>
         )}
       </div>
-      <div className="flex-1 overflow-auto rounded-xl border shadow p-6 space-y-8 no-scrollbar">
+      <div className="flex-1 overflow-auto rounded-md border p-6 space-y-8 no-scrollbar">
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">

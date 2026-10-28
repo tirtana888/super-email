@@ -263,14 +263,14 @@ export default function EmailsList() {
           </Button>
         </div>
       </div>
-      <div className="flex flex-col rounded-xl border shadow">
+      <div className="flex flex-col rounded-md border">
         <Table className="">
           <TableHeader className="">
             <TableRow className=" bg-muted dark:bg-muted/70">
-              <TableHead className="rounded-tl-xl">To</TableHead>
+              <TableHead className="rounded-tl-md">To</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Subject</TableHead>
-              <TableHead className="whitespace-nowrap text-right rounded-tr-xl">
+              <TableHead className="whitespace-nowrap text-right rounded-tr-md">
                 Sent
               </TableHead>
             </TableRow>

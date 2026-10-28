@@ -56,15 +56,15 @@ export function WebhookList() {
 
   return (
     <div className="mt-10">
-      <div className="rounded-xl border shadow">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
-              <TableHead className="rounded-tl-xl">URL</TableHead>
+              <TableHead className="rounded-tl-md">URL</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last success</TableHead>
               <TableHead>Last failure</TableHead>
-              <TableHead className="rounded-tr-xl text-right">
+              <TableHead className="rounded-tr-md text-right">
                 Actions
               </TableHead>
             </TableRow>

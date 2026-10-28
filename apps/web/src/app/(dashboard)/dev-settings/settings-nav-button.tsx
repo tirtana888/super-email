@@ -31,7 +31,7 @@ export const SettingsNavButton: React.FC<{
   return (
     <Link
       href={href}
-      className={`flex text-sm items-center mt-1 gap-3 rounded px-2 py-1 transition-all hover:text-foreground ${isActive ? " bg-accent" : "text-muted-foreground"}`}
+      className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-[13px] transition-colors ${isActive ? "border-foreground font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
     >
       {children}
     </Link>

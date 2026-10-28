@@ -36,10 +36,10 @@ export default function TemplateList() {
         <Table className="">
           <TableHeader className="">
             <TableRow className=" bg-muted/30">
-              <TableHead className="rounded-tl-xl">Name</TableHead>
+              <TableHead className="rounded-tl-md">Name</TableHead>
               <TableHead className="">ID</TableHead>
               <TableHead className="">Created At</TableHead>
-              <TableHead className="rounded-tr-xl">Actions</TableHead>
+              <TableHead className="rounded-tr-md">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

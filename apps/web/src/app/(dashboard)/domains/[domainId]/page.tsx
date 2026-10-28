@@ -10,7 +10,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@usesend/ui/src/breadcrumb";
-import { DomainStatusBadge } from "../domain-badge";
+import {
+  DomainStatusBadge,
+  domainStatusLabel,
+  domainStatusTone,
+} from "../domain-badge";
+import { StatusDot } from "@usesend/ui/src/status-dot";
 import {
   Table,
   TableBody,
@@ -207,10 +212,10 @@ export default function DomainItemPage({
             <Table className="mt-2">
               <TableHeader className="">
                 <TableRow className="">
-                  <TableHead className="rounded-tl-xl px-3">Type</TableHead>
+                  <TableHead className="rounded-tl-md px-3">Type</TableHead>
                   <TableHead className="px-3">Name</TableHead>
                   <TableHead className="px-3">Content</TableHead>
-                  <TableHead className="rounded-tr-xl px-3">Status</TableHead>
+                  <TableHead className="rounded-tr-md px-3">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -345,29 +350,9 @@ const DomainSettings: React.FC<{ domain: DomainResponse }> = ({ domain }) => {
 };
 
 const DnsVerificationStatus: React.FC<{ status: DomainStatus }> = ({ status }) => {
-  let badgeColor = "bg-gray/10 text-gray border-gray/10"; // Default color
-  switch (status) {
-    case DomainStatus.SUCCESS:
-      badgeColor = "bg-green/15 text-green border border-green/25";
-      break;
-    case DomainStatus.FAILED:
-      badgeColor = "bg-red/10 text-red border border-red/10";
-      break;
-    case DomainStatus.TEMPORARY_FAILURE:
-    case DomainStatus.PENDING:
-      badgeColor = "bg-yellow/20 text-yellow border border-yellow/10";
-      break;
-    default:
-      badgeColor = "bg-gray/10 text-gray border border-gray/20";
-  }
-
   return (
-    <div
-      className={`text-xs text-center min-w-[70px] whitespace-nowrap capitalize rounded-md px-2 py-1 justify-center inline-flex items-center ${badgeColor}`}
-    >
-      {status === DomainStatus.SUCCESS
-        ? "verified"
-        : status.split("_").join(" ").toLowerCase()}
-    </div>
+    <StatusDot tone={domainStatusTone(status)}>
+      {domainStatusLabel(status)}
+    </StatusDot>
   );
 };

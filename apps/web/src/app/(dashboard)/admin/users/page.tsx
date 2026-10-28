@@ -138,16 +138,16 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border shadow">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted dark:bg-muted/70">
-              <TableHead className="rounded-tl-xl px-3">User</TableHead>
+              <TableHead className="rounded-tl-md px-3">User</TableHead>
               <TableHead className="px-3">Team</TableHead>
               <TableHead className="px-3">Plan</TableHead>
               <TableHead className="px-3 text-right">Domains</TableHead>
               <TableHead className="px-3 text-right">Sent (month)</TableHead>
-              <TableHead className="rounded-tr-xl px-3">Joined</TableHead>
+              <TableHead className="rounded-tr-md px-3">Joined</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -2,13 +2,13 @@
 
 import AddApiKey from "./add-api-key";
 import ApiList from "./api-list";
-import { H1 } from "@usesend/ui";
+import { H2 } from "@usesend/ui";
 
 export default function ApiKeysPage() {
   return (
     <div>
       <div className="flex justify-between items-center">
-        <H1>API Keys</H1>
+        <H2>API keys</H2>
         <AddApiKey />
       </div>
       <ApiList />

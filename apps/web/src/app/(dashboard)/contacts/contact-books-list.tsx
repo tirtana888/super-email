@@ -38,7 +38,7 @@ export default function ContactBooksList() {
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 200, damping: 10 }}
             whileTap={{ scale: 0.99 }}
-            className="border rounded-xl shadow hover:shadow-lg"
+            className="border rounded-md hover:bg-muted/40"
           >
             <div className="flex flex-col">
               <Link href={`/contacts/${contactBook.id}`} key={contactBook.id}>
