@@ -17,6 +17,17 @@ const config = {
       },
     ],
   },
+  // The app is a logged-in dashboard, so none of it belongs in search results.
+  // This is a header rather than a robots.txt rule so crawlers can still fetch
+  // the pages and see the noindex, which is what removes ones already indexed.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
+  },
 };
 
 export default config;

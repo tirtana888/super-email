@@ -21,6 +21,7 @@ export const metadata: Metadata = {
   title: "F14 - Send Email Like a Jet",
   description: "Send email like a jet. Email API for developers in Indonesia.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
+  robots: { index: false, follow: false },
 };
 
 export default async function RootLayout({
