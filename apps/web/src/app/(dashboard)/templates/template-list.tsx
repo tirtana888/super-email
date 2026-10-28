@@ -48,6 +48,32 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   );
 }
 
+function IdChip({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title={copied ? "Copied" : `${id} · click to copy`}
+      className="inline-flex items-center gap-1.5 rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground hover:text-foreground"
+    >
+      {id.slice(0, 10)}…
+      <span className="text-[10px] uppercase tracking-wide">{copied ? "Copied" : "Copy"}</span>
+    </button>
+  );
+}
+
 export default function TemplateList() {
   const [page, setPage] = useUrlState("page", "1");
   const [search, setSearch] = useUrlState("search");
@@ -90,7 +116,7 @@ export default function TemplateList() {
         ) : null}
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid items-start gap-4 2xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col rounded-md border">
           <Table>
             <TableHeader>
@@ -99,7 +125,7 @@ export default function TemplateList() {
                 <TableHead className="hidden lg:table-cell">Variables</TableHead>
                 <TableHead className="hidden md:table-cell">Template ID</TableHead>
                 <TableHead className="whitespace-nowrap text-right">
-                  Last edited ({DISPLAY_TIME_ZONE_LABEL})
+                  Edited ({DISPLAY_TIME_ZONE_LABEL})
                 </TableHead>
                 <TableHead className="w-20 rounded-tr-md">
                   <span className="sr-only">Actions</span>
@@ -130,7 +156,7 @@ export default function TemplateList() {
                         {template.name}
                       </Link>
                       <div
-                        className="mt-0.5 max-w-[320px] truncate text-xs text-muted-foreground"
+                        className="mt-0.5 max-w-[360px] truncate text-xs text-muted-foreground"
                         title={template.subject}
                       >
                         {template.subject || "No subject"}
@@ -157,8 +183,11 @@ export default function TemplateList() {
                         <span className="text-xs text-muted-foreground">None</span>
                       )}
                     </TableCell>
-                    <TableCell className="hidden font-mono text-xs text-muted-foreground md:table-cell">
-                      {template.id}
+                    <TableCell
+                      className="hidden md:table-cell"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <IdChip id={template.id} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-right font-mono text-xs text-muted-foreground">
                       <span
@@ -207,7 +236,7 @@ export default function TemplateList() {
 
             <div className="flex flex-col gap-1.5">
               <div className="text-xs font-medium text-muted-foreground">Send with this template</div>
-              <pre className="overflow-x-auto rounded-md border bg-muted px-3 py-2.5 font-mono text-[11.5px] leading-relaxed text-foreground">
+              <pre className="whitespace-pre-wrap break-all rounded-md border bg-muted px-3 py-2.5 font-mono text-[11.5px] leading-relaxed text-foreground">
                 <span className="text-muted-foreground">POST</span> {origin}/api/v1/emails
                 {"\n"}
                 {templateSendExample({

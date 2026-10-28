@@ -81,7 +81,7 @@ export default function CreateTemplate() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-1" />
-          Create Template
+          Create template
         </Button>
       </DialogTrigger>
       <DialogContent>

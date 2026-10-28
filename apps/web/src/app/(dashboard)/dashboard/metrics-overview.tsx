@@ -77,7 +77,11 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
   const w = 120;
   const h = 24;
   if (values.length < 2 || max === 0) {
-    return <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden />;
+    return (
+      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden>
+        <line x1="0" x2={w} y1={h - 2} y2={h - 2} stroke="hsl(var(--border))" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      </svg>
+    );
   }
   const points = values
     .map((v, i) => `${(i / (values.length - 1)) * w},${h - 2 - (v / max) * (h - 4)}`)
@@ -91,7 +95,11 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
 
 type Kpi = {
   label: string;
+  /** How the figure is calculated, shown on hover. */
+  definition: string;
   value: string;
+  /** The count behind the figure, e.g. "405 bounced". */
+  detail: string;
   change: string | null;
   // Whether this change is good news, bad news or neither.
   tone: "good" | "bad" | "neutral";
@@ -112,14 +120,18 @@ function buildKpis(
     key: keyof MetricRates,
     color: string,
     higherIsBetter: boolean,
+    detail: string,
+    definition: string,
     digits = 1,
   ): Kpi => {
     const change = rateChange(rates.current[key], rates.previous[key]);
     return {
       label,
+      definition,
       value: pct(rates.current[key], digits),
+      detail,
       change:
-        change === null ? null : signed(change, `${Math.abs(change * 100).toFixed(digits + 1)} pt`),
+        change === null ? null : signed(change, `${Math.abs(change * 100).toFixed(digits)} pt`),
       tone:
         change === null || change === 0
           ? "neutral"
@@ -132,20 +144,24 @@ function buildKpis(
   };
 
   const sentChange = countChange(current.sent, previous.sent);
+  const perDay = series.length ? Math.round(current.sent / series.length) : 0;
+  const n = (v: number) => v.toLocaleString();
   return [
     {
       label: "Sent",
-      value: current.sent.toLocaleString(),
+      definition: "Emails accepted for sending in this period.",
+      value: n(current.sent),
+      detail: `${n(perDay)} per day on average`,
       change: sentChange === null ? null : signed(sentChange, `${Math.abs(sentChange * 100).toFixed(1)}%`),
       tone: "neutral",
       spark: series.map((d) => d.sent),
       color: colors.clicked,
     },
-    rateKpi("Delivered", "deliveredRate", colors.delivered, true),
-    rateKpi("Bounce rate", "bounceRate", colors.bounced, false, 2),
-    rateKpi("Complaint rate", "complaintRate", colors.complained, false, 3),
-    rateKpi("Open rate", "openRate", colors.xaxis, true),
-    rateKpi("Click rate", "clickRate", colors.xaxis, true),
+    rateKpi("Delivered", "deliveredRate", colors.delivered, true, `${n(current.delivered)} delivered`, "Delivered ÷ sent."),
+    rateKpi("Bounce rate", "bounceRate", colors.bounced, false, `${n(current.bounced)} bounced`, "Bounced ÷ sent.", 2),
+    rateKpi("Complaint rate", "complaintRate", colors.complained, false, `${n(current.complained)} spam complaints`, "Spam complaints ÷ sent.", 3),
+    rateKpi("Open rate", "openRate", colors.xaxis, true, `${n(current.opened)} opened`, "Opened ÷ delivered. Needs open tracking on the domain."),
+    rateKpi("Click rate", "clickRate", colors.xaxis, true, `${n(current.clicked)} clicked`, "Clicked ÷ delivered. Needs click tracking on the domain."),
   ];
 }
 
@@ -218,24 +234,49 @@ export default function MetricsOverview({ days, domain }: { days: number; domain
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-label="Key figures" className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border sm:grid-cols-3 xl:grid-cols-6">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="flex flex-col gap-0.5 bg-card px-4 py-3">
-            <span className="text-xs text-muted-foreground">{kpi.label}</span>
-            <span className="text-xl font-semibold tabular-nums tracking-tight">{kpi.value}</span>
-            <span
-              className={`text-[11.5px] tabular-nums ${
-                kpi.tone === "good" ? "text-green" : kpi.tone === "bad" ? "text-red" : "text-muted-foreground"
-              }`}
-            >
-              {kpi.change ?? "No earlier data"}
-              {kpi.change ? <span className="text-muted-foreground"> vs previous {days} days</span> : null}
-            </span>
-            <div className="mt-1">
-              <Sparkline values={kpi.spark} color={kpi.color} />
+      <section aria-label="Key figures" className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-base font-semibold tracking-tight">Overview</h2>
+          <span className="text-xs text-muted-foreground">
+            Last {days} days · changes compared with the {days} days before
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border md:grid-cols-3 2xl:grid-cols-6">
+          {kpis.map((kpi) => (
+            <div key={kpi.label} className="flex min-w-0 flex-col bg-card px-4 pb-3 pt-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-xs font-medium text-muted-foreground" title={kpi.definition}>
+                  {kpi.label}
+                </span>
+                {kpi.change ? (
+                  <span
+                    className={`shrink-0 rounded px-1.5 py-px text-[11px] font-medium tabular-nums ${
+                      kpi.tone === "good"
+                        ? "bg-green/10 text-green"
+                        : kpi.tone === "bad"
+                          ? "bg-red/10 text-red"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                    title={`Change compared with the previous ${days} days`}
+                  >
+                    {kpi.change}
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-[11px] text-muted-foreground" title="No sends in the previous period to compare with">
+                    New
+                  </span>
+                )}
+              </div>
+              <span className="mt-1.5 text-2xl font-semibold tabular-nums leading-none tracking-tight">
+                {kpi.value}
+              </span>
+              <span className="mt-1.5 truncate text-xs tabular-nums text-muted-foreground">{kpi.detail}</span>
+              <div className="mt-2">
+                <Sparkline values={kpi.spark} color={kpi.color} />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </section>
 
       <section aria-label="Sending reputation" className="flex flex-col gap-2">
