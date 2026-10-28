@@ -34,7 +34,7 @@ export default function DashboardFilters({
         value={domain ?? "All Domains"}
         onValueChange={(val) => handleDomain(val)}
       >
-        <SelectTrigger className="w-full sm:w-[180px]">
+        <SelectTrigger className="h-9 w-full text-[13px] sm:w-[200px]">
           {domain
             ? domainsQuery?.find((d) => d.id === Number(domain))?.name
             : "All Domains"}
@@ -54,10 +54,13 @@ export default function DashboardFilters({
       <Tabs value={days || "30"} onValueChange={(value) => setDays(value)}>
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="7" className="flex-1 sm:flex-none">
-            7 Days
+            7 days
           </TabsTrigger>
           <TabsTrigger value="30" className="flex-1 sm:flex-none">
-            30 Days
+            30 days
+          </TabsTrigger>
+          <TabsTrigger value="90" className="flex-1 sm:flex-none">
+            90 days
           </TabsTrigger>
         </TabsList>
       </Tabs>

@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { createTRPCRouter, teamProcedure } from "~/server/api/trpc";
-import { emailTimeSeries, reputationMetricsData } from "~/server/service/dashboard-service";
+import {
+  emailTimeSeries,
+  metricsOverview,
+  reputationMetricsData,
+} from "~/server/service/dashboard-service";
+import { METRIC_PERIODS } from "~/lib/metrics-summary";
 
 export const dashboardRouter = createTRPCRouter({
   emailTimeSeries: teamProcedure
@@ -16,6 +21,20 @@ export const dashboardRouter = createTRPCRouter({
       const response = await emailTimeSeries({team, days: input.days, domain: input.domain})
 
       return response
+    }),
+
+  overview: teamProcedure
+    .input(
+      z.object({
+        days: z
+          .number()
+          .refine((d) => (METRIC_PERIODS as readonly number[]).includes(d))
+          .default(30),
+        domain: z.number().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return metricsOverview({ team: ctx.team, days: input.days, domain: input.domain });
     }),
 
   reputationMetricsData: teamProcedure

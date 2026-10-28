@@ -1,6 +1,11 @@
 import { db } from "~/server/db";
 import { format, subDays } from "date-fns";
 import { Prisma, Team } from "@prisma/client";
+import {
+  metricPeriods,
+  summarizeMetrics,
+  type DailyMetricRow,
+} from "~/lib/metrics-summary";
 
 type EmailTimeSeries = {
   days?: number;
@@ -91,6 +96,53 @@ export async function emailTimeSeries(input: EmailTimeSeries) {
   );
 
   return { result: filledResult, totalCounts };
+}
+
+/**
+ * KPIs for the selected period and the one before it, a daily series and a
+ * per-domain breakdown, all from DailyEmailUsage in one query.
+ */
+export async function metricsOverview(input: {
+  team: Team;
+  days: number;
+  domain?: number;
+}) {
+  const { team, days, domain } = input;
+  const range = metricPeriods(days);
+
+  const rows = await db.$queryRaw<Array<DailyMetricRow>>`
+    SELECT
+      date,
+      "domainId",
+      SUM(sent)::integer AS sent,
+      SUM(delivered)::integer AS delivered,
+      SUM(opened)::integer AS opened,
+      SUM(clicked)::integer AS clicked,
+      SUM(bounced)::integer AS bounced,
+      SUM(complained)::integer AS complained
+    FROM "DailyEmailUsage"
+    WHERE "teamId" = ${team.id}
+    AND "date" >= ${range.previousStart}
+    AND "date" <= ${range.end}
+    ${domain ? Prisma.sql`AND "domainId" = ${domain}` : Prisma.empty}
+    GROUP BY date, "domainId"
+  `;
+
+  const summary = summarizeMetrics(rows, { days });
+
+  const domains = await db.domain.findMany({
+    where: { teamId: team.id, id: { in: summary.byDomain.map((d) => d.domainId) } },
+    select: { id: true, name: true },
+  });
+  const nameById = new Map(domains.map((d) => [d.id, d.name]));
+
+  return {
+    ...summary,
+    byDomain: summary.byDomain.map((d) => ({
+      ...d,
+      name: nameById.get(d.domainId) ?? `Domain #${d.domainId}`,
+    })),
+  };
 }
 
 type ReputationMetricsData = {
