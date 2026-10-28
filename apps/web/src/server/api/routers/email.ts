@@ -12,6 +12,10 @@ import {
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { cancelEmail, updateEmail } from "~/server/service/email-service";
+import {
+  emailFilterInput,
+  emailFilterSql,
+} from "~/server/service/email-filter";
 
 const statuses = Object.values(EmailStatus) as [EmailStatus];
 
@@ -81,12 +85,8 @@ const getBounceReasonFromParsed = (
 export const emailRouter = createTRPCRouter({
   emails: teamProcedure
     .input(
-      z.object({
+      emailFilterInput.extend({
         page: z.number().optional(),
-        status: z.enum(statuses).optional().nullable(),
-        domain: z.number().optional(),
-        search: z.string().optional().nullable(),
-        apiId: z.number().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -101,23 +101,12 @@ export const emailRouter = createTRPCRouter({
           "latestStatus",
           subject,
           "to",
-          "scheduledAt"
+          "scheduledAt",
+          "domainId",
+          "apiId",
+          "campaignId"
         FROM "Email"
-        WHERE "teamId" = ${ctx.team.id}
-        ${input.status ? Prisma.sql`AND "latestStatus"::text = ${input.status}` : Prisma.sql``}
-        ${input.domain ? Prisma.sql`AND "domainId" = ${input.domain}` : Prisma.sql``}
-        ${input.apiId ? Prisma.sql`AND "apiId" = ${input.apiId}` : Prisma.sql``}
-        ${
-          input.search
-            ? Prisma.sql`AND (
-          "subject" ILIKE ${`%${input.search}%`}
-          OR EXISTS (
-            SELECT 1 FROM unnest("to") AS email
-            WHERE email ILIKE ${`%${input.search}%`}
-          )
-        )`
-            : Prisma.sql``
-        }
+        WHERE ${emailFilterSql(ctx.team.id, input)}
         ORDER BY "createdAt" DESC
         LIMIT ${DEFAULT_QUERY_LIMIT}
         OFFSET ${offset}
@@ -126,14 +115,30 @@ export const emailRouter = createTRPCRouter({
       return { emails };
     }),
 
+  statusCounts: teamProcedure
+    .input(emailFilterInput.omit({ status: true }))
+    .query(async ({ ctx, input }) => {
+      if (!input.days) {
+        return null;
+      }
+
+      const rows = await db.$queryRaw<
+        Array<{ status: EmailStatus; count: number }>
+      >`
+        SELECT "latestStatus" AS status, COUNT(*)::int AS count
+        FROM "Email"
+        WHERE ${emailFilterSql(ctx.team.id, input, { includeStatus: false })}
+        GROUP BY "latestStatus"
+      `;
+
+      return Object.fromEntries(
+        rows.map((row) => [row.status, row.count]),
+      ) as Partial<Record<EmailStatus, number>>;
+    }),
+
   exportEmails: teamProcedure
     .input(
-      z.object({
-        status: z.enum(statuses).optional().nullable(),
-        domain: z.number().optional(),
-        search: z.string().optional().nullable(),
-        apiId: z.number().optional(),
-      }),
+      emailFilterInput,
     )
     .query(async ({ ctx, input }) => {
       const emails = await db.$queryRaw<
@@ -161,33 +166,7 @@ export const emailRouter = createTRPCRouter({
           ORDER BY "createdAt" DESC
           LIMIT 1
         ) b ON true
-        WHERE e."teamId" = ${ctx.team.id}
-        ${
-          input.status
-            ? Prisma.sql`AND e."latestStatus"::text = ${input.status}`
-            : Prisma.sql``
-        }
-        ${
-          input.domain
-            ? Prisma.sql`AND e."domainId" = ${input.domain}`
-            : Prisma.sql``
-        }
-        ${
-          input.apiId
-            ? Prisma.sql`AND e."apiId" = ${input.apiId}`
-            : Prisma.sql``
-        }
-        ${
-          input.search
-            ? Prisma.sql`AND (
-          e."subject" ILIKE ${`%${input.search}%`}
-          OR EXISTS (
-            SELECT 1 FROM unnest(e."to") AS email
-            WHERE email ILIKE ${`%${input.search}%`}
-          )
-        )`
-            : Prisma.sql``
-        }
+        WHERE ${emailFilterSql(ctx.team.id, input, { alias: "e" })}
         ORDER BY e."createdAt" DESC
         LIMIT 10000
       `;
@@ -240,6 +219,12 @@ export const emailRouter = createTRPCRouter({
         to: true,
         from: true,
         domainId: true,
+        apiId: true,
+        campaignId: true,
+        sesEmailId: true,
+        cc: true,
+        bcc: true,
+        replyTo: true,
         text: true,
         html: true,
         scheduledAt: true,

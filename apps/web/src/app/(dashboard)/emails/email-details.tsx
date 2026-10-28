@@ -2,10 +2,7 @@
 
 import { UAParser } from "ua-parser-js";
 import { api } from "~/trpc/react";
-import { Separator } from "@usesend/ui/src/separator";
 import { EmailStatusBadge, EmailStatusIcon } from "./email-status-badge";
-import { formatDate } from "date-fns";
-import { motion } from "framer-motion";
 import { EmailStatus } from "@prisma/client";
 import { JsonValue } from "@prisma/client/runtime/library";
 import {
@@ -21,122 +18,240 @@ import {
   DELIVERY_DELAY_ERRORS,
 } from "@usesend/lib/src/constants/ses-errors";
 import { getEmailPreviewSrcDoc } from "~/lib/email-preview";
+import {
+  formatDashboardTimeLong,
+  formatElapsed,
+} from "~/lib/format-time";
+import { TextWithCopyButton } from "@usesend/ui/src/text-with-copy";
 import CancelEmail from "./cancel-email";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+// Statuses that mean something went wrong; the newest one is explained at the top.
+const PROBLEM_STATUSES: EmailStatus[] = [
+  "BOUNCED",
+  "COMPLAINED",
+  "FAILED",
+  "REJECTED",
+  "RENDERING_FAILURE",
+  "DELIVERY_DELAYED",
+  "SUPPRESSED",
+];
 
 export default function EmailDetails({ emailId }: { emailId: string }) {
   const emailQuery = api.email.getEmail.useQuery({ id: emailId });
+  const { data: domains } = api.domain.domains.useQuery();
+  const { data: apiKeys } = api.apiKey.getApiKeys.useQuery();
+  const [tab, setTab] = useState<"events" | "content">("events");
+
+  const email = emailQuery.data;
+
+  if (emailQuery.isLoading) {
+    return <div className="px-4 py-6 text-sm text-muted-foreground">Loading email...</div>;
+  }
+
+  if (!email) {
+    return <div className="px-4 py-6 text-sm text-muted-foreground">Email not found.</div>;
+  }
+
+  const events = [...email.emailEvents].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+  const problem = [...events]
+    .reverse()
+    .find((evt) => PROBLEM_STATUSES.includes(evt.status));
+  const domainName = email.domainId
+    ? domains?.find((d) => d.id === email.domainId)?.name
+    : undefined;
+  const apiKeyName = email.apiId
+    ? apiKeys?.find((k) => k.id === email.apiId)?.name
+    : undefined;
 
   return (
-    <div className="h-full overflow-auto px-4 no-scrollbar">
-      <div className="flex justify-between items-center">
-        <div className="flex gap-4 items-center">
-          <h1 className="font-bold">{emailQuery.data?.to}</h1>
-          <EmailStatusBadge status={emailQuery.data?.latestStatus ?? "SENT"} />
+    <div className="flex h-full flex-col gap-5 overflow-auto px-1 pb-6 no-scrollbar">
+      <header className="flex flex-col gap-2 border-b pb-4 pr-8">
+        <div className="flex items-center justify-between gap-3">
+          <EmailStatusBadge status={email.latestStatus} />
+          <TextWithCopyButton
+            value={email.id}
+            className="font-mono text-xs text-muted-foreground"
+          />
         </div>
-      </div>
-      <div className="flex flex-col mt-8 items-start gap-8">
-        <div className="p-2 rounded-lg border  flex flex-col gap-2 w-full shadow">
-          {/* <div className="flex gap-2">
-            <span className="w-[100px] text-muted-foreground text-sm">
-              From
-            </span>
-            <span className="text-sm">{emailQuery.data?.from}</span>
-          </div>
-          <Separator />
-          <div className="flex gap-2">
-            <span className="w-[100px] text-muted-foreground text-sm">To</span>
-            <span className="text-sm">{emailQuery.data?.to}</span>
-          </div>
-          <Separator />
-          <div className="flex gap-2">
-            <span className="w-[100px] text-muted-foreground text-sm">
-              Subject
-            </span>
-            <span className="text-sm">{emailQuery.data?.subject}</span>
-          </div> */}
-          <div className="flex flex-col gap-1 px-4 py-1">
-            {/* <div className=" text-[15px] font-medium">
-              {emailQuery.data?.to}
-            </div> */}
-            <div className=" text-sm">Subject: {emailQuery.data?.subject}</div>
-            <div className="text-muted-foreground text-xs">
-              From: {emailQuery.data?.from}
-            </div>
-          </div>
-          {emailQuery.data?.latestStatus === "SCHEDULED" &&
-          emailQuery.data?.scheduledAt ? (
-            <>
-              <Separator />
-              <div className="flex gap-2 items-center px-4">
-                <span className="w-[100px] text-muted-foreground text-sm ">
-                  Scheduled at
-                </span>
-                <span className="text-sm">
-                  {formatDate(
-                    emailQuery.data?.scheduledAt,
-                    "MMM dd'th', hh:mm a",
-                  )}
-                </span>
-                <div className="ml-4">
-                  <CancelEmail emailId={emailId} />
-                </div>
-              </div>
-            </>
-          ) : null}
+        <h2 className="text-base font-semibold leading-snug text-foreground">
+          {email.subject || "(no subject)"}
+        </h2>
+      </header>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2, delay: 0.3 }}
-          >
-            <EmailPreview
-              html={emailQuery.data?.html}
-              text={emailQuery.data?.text}
-            />
-          </motion.div>
+      {problem ? <ProblemCallout status={problem.status} data={problem.data} /> : null}
+
+      {email.latestStatus === "SCHEDULED" && email.scheduledAt ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2.5 text-[13px]">
+          <span>
+            Scheduled for{" "}
+            <span className="font-medium">{formatDashboardTimeLong(email.scheduledAt)}</span>
+          </span>
+          <CancelEmail emailId={emailId} />
         </div>
-        {emailQuery.data?.latestStatus !== "SCHEDULED" ? (
-          <div className=" border rounded-lg w-full shadow mb-2 ">
-            <div className="  p-4 flex flex-col gap-8 w-full">
-              <div className="font-medium">Events History</div>
-              <div className="flex items-stretch px-4 w-full">
-                <div className="border-r border-gray-300 dark:border-gray-700 border-dashed" />
-                <div className="flex flex-col gap-12 w-full">
-                  {emailQuery.data?.emailEvents.map((evt) => (
-                    <div
-                      key={evt.status}
-                      className="flex gap-5 items-start w-full"
-                    >
-                      <div className=" -ml-2.5">
-                        <EmailStatusIcon status={evt.status} />
-                      </div>
-                      <div className="-mt-[0.125rem] w-full">
-                        <div className=" capitalize font-medium">
-                          <EmailStatusBadge status={evt.status} />
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-2">
-                          {formatDate(evt.createdAt, "MMM dd, hh:mm a")}
-                        </div>
-                        <div className="mt-1 text-foreground/80">
-                          <EmailStatusText
-                            status={evt.status}
-                            data={evt.data}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+      ) : null}
+
+      <dl className="grid grid-cols-[110px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[13px]">
+        <DetailRow label="To" value={email.to.join(", ")} />
+        {email.cc.length ? <DetailRow label="Cc" value={email.cc.join(", ")} /> : null}
+        {email.bcc.length ? <DetailRow label="Bcc" value={email.bcc.join(", ")} /> : null}
+        <DetailRow label="From" value={email.from} />
+        {email.replyTo.length ? (
+          <DetailRow label="Reply to" value={email.replyTo.join(", ")} />
         ) : null}
+        <DetailRow label="Domain" value={domainName ?? "—"} />
+        <DetailRow
+          label="Source"
+          value={
+            email.campaignId
+              ? "Campaign"
+              : apiKeyName
+                ? `API key · ${apiKeyName}`
+                : email.apiId
+                  ? "API key"
+                  : "—"
+          }
+        />
+        <DetailRow label="Created" value={formatDashboardTimeLong(email.createdAt)} />
+        {email.sesEmailId ? (
+          <>
+            <dt className="text-muted-foreground">Message ID</dt>
+            <dd className="min-w-0">
+              <TextWithCopyButton
+                value={email.sesEmailId}
+                className="truncate font-mono text-xs"
+              />
+            </dd>
+          </>
+        ) : null}
+      </dl>
+
+      <div className="flex gap-1 border-b">
+        {(
+          [
+            ["events", `Events (${events.length})`],
+            ["content", "Content"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setTab(value)}
+            className={`-mb-px border-b-2 px-3 py-2 text-[13px] transition-colors ${
+              tab === value
+                ? "border-foreground font-medium text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
+
+      {tab === "events" ? (
+        events.length ? (
+          <ol className="flex flex-col">
+            {events.map((evt, index) => (
+              <li key={`${evt.status}-${index}`} className="relative flex gap-3 pb-5 last:pb-0">
+                {index < events.length - 1 ? (
+                  <span
+                    aria-hidden
+                    className="absolute left-[9px] top-6 bottom-0 w-px bg-border"
+                  />
+                ) : null}
+                <EmailStatusIcon status={evt.status} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[13px] font-medium">
+                      {statusLabel(evt.status)}
+                    </span>
+                    <span className="shrink-0 font-mono text-[11.5px] text-muted-foreground">
+                      {index === 0
+                        ? formatDashboardTimeLong(evt.createdAt)
+                        : formatElapsed(events[index - 1]!.createdAt, evt.createdAt)}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-[13px] text-muted-foreground">
+                    <EmailStatusText status={evt.status} data={evt.data} />
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="text-[13px] text-muted-foreground">No events yet.</p>
+        )
+      ) : (
+        <EmailPreview html={email.html} text={email.text} />
+      )}
     </div>
   );
 }
+
+function statusLabel(status: string) {
+  const label = status.toLowerCase().split("_").join(" ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-words text-foreground">{value}</dd>
+    </>
+  );
+}
+
+const ProblemCallout = ({
+  status,
+  data,
+}: {
+  status: EmailStatus;
+  data: JsonValue;
+}) => {
+  let title = statusLabel(status);
+  let message: string | undefined;
+  let detail: string | undefined;
+
+  if (status === "BOUNCED") {
+    const bounce = data as unknown as SesBounce;
+    title = `${bounce?.bounceType === "Permanent" ? "Hard" : bounce?.bounceType === "Transient" ? "Soft" : ""} bounce`.trim();
+    title = title.charAt(0).toUpperCase() + title.slice(1);
+    message = bounce ? getErrorMessage(bounce) : undefined;
+    detail = bounce?.bouncedRecipients?.[0]?.diagnosticCode;
+  } else if (status === "COMPLAINED") {
+    const complaint = data as unknown as SesComplaint;
+    title = "Marked as spam";
+    message = getComplaintMessage(complaint?.complaintFeedbackType);
+  } else if (status === "DELIVERY_DELAYED") {
+    const delay = data as unknown as SesDeliveryDelay;
+    title = "Delivery delayed";
+    message = delay ? DELIVERY_DELAY_ERRORS[delay.delayType] : undefined;
+  } else if (status === "FAILED" || status === "REJECTED" || status === "RENDERING_FAILURE") {
+    const failure = data as unknown as { error?: string };
+    message = failure?.error;
+  } else if (status === "SUPPRESSED") {
+    message =
+      "Not sent because this address is on the Exclusions list after an earlier bounce or complaint.";
+  }
+
+  const tone =
+    status === "DELIVERY_DELAYED" || status === "SUPPRESSED"
+      ? "border-l-yellow"
+      : "border-l-red";
+
+  return (
+    <div className={`rounded-md border border-l-[3px] ${tone} bg-muted/40 px-3 py-2.5 text-[13px]`}>
+      <div className="font-medium text-foreground">{title}</div>
+      {message ? <p className="mt-0.5 text-muted-foreground">{message}</p> : null}
+      {detail ? (
+        <p className="mt-2 break-words font-mono text-xs text-foreground/80">{detail}</p>
+      ) : null}
+    </div>
+  );
+};
 
 const EmailPreview = ({
   html,
@@ -158,28 +273,20 @@ const EmailPreview = ({
   const srcDoc = getEmailPreviewSrcDoc(html, text);
 
   if (!show) {
-    return (
-      <div className="dark:bg-slate-200 h-[350px] overflow-visible rounded border-t"></div>
-    );
+    return <div className="h-[420px] rounded-md border bg-white" />;
   }
 
   if (!srcDoc) {
     return (
-      <div className="dark:bg-slate-200 h-[350px] overflow-visible rounded border-t flex items-center justify-center">
-        <span className="text-sm text-muted-foreground dark:text-slate-500">
-          No content to preview
-        </span>
+      <div className="flex h-[420px] items-center justify-center rounded-md border">
+        <span className="text-sm text-muted-foreground">No content to preview</span>
       </div>
     );
   }
 
   return (
-    <div className="dark:bg-slate-200 h-[350px] overflow-visible rounded border-t">
-      <iframe
-        className="w-full h-full"
-        srcDoc={srcDoc}
-        sandbox="allow-same-origin"
-      />
+    <div className="h-[420px] overflow-hidden rounded-md border bg-white">
+      <iframe className="h-full w-full" srcDoc={srcDoc} sandbox="allow-same-origin" />
     </div>
   );
 };
@@ -192,114 +299,49 @@ const EmailStatusText = ({
   data: JsonValue;
 }) => {
   if (status === "SENT") {
-    return (
-      <div>
-        We received your request and sent the email to recipient's server.
-      </div>
-    );
+    return <div>Accepted and handed to the recipient's mail server.</div>;
   } else if (status === "DELIVERED") {
-    return <div>Mail is successfully delivered to the recipient.</div>;
+    return <div>Delivered to the recipient's mail server.</div>;
   } else if (status === "DELIVERY_DELAYED") {
     const _errorData = data as unknown as SesDeliveryDelay;
-    const errorMessage = DELIVERY_DELAY_ERRORS[_errorData.delayType];
-
-    return <div>{errorMessage}</div>;
+    return <div>{DELIVERY_DELAY_ERRORS[_errorData.delayType]}</div>;
   } else if (status === "BOUNCED") {
     const _errorData = data as unknown as SesBounce;
-    _errorData.bounceType;
-
     return (
-      <div className="flex flex-col gap-4 w-full">
-        <p>{getErrorMessage(_errorData)}</p>
-        <div className="rounded-xl p-4 bg-muted/30 flex flex-col gap-4">
-          <div className="flex gap-2 w-full">
-            <div className="w-1/2">
-              <p className="text-sm text-muted-foreground">Type</p>
-              <p>{_errorData.bounceType}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Sub Type</p>
-              <p>{_errorData.bounceSubType}</p>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">SMTP response</p>
-            <p>{_errorData.bouncedRecipients[0]?.diagnosticCode}</p>
-          </div>
-        </div>
-      </div>
+      <dl className="mt-1 grid grid-cols-[90px_minmax(0,1fr)] gap-x-3 gap-y-1">
+        <dt>Type</dt>
+        <dd className="text-foreground">{_errorData.bounceType}</dd>
+        <dt>Subtype</dt>
+        <dd className="text-foreground">{_errorData.bounceSubType}</dd>
+      </dl>
     );
   } else if (status === "FAILED") {
     const _errorData = data as unknown as { error: string };
     return <div>{_errorData.error}</div>;
-  } else if (status === "OPENED") {
-    const _data = data as unknown as SesOpen;
+  } else if (status === "OPENED" || status === "CLICKED") {
+    const _data = data as unknown as SesOpen & Partial<SesClick>;
     const userAgent = getUserAgent(_data.userAgent);
-
+    const client = [userAgent.browser.name, userAgent.os.name].filter(Boolean).join(" on ");
     return (
-      <div className="w-full rounded-xl p-4 bg-muted/30 mt-4">
-        <div className="flex  w-full ">
-          {userAgent.os.name ? (
-            <div className="w-1/2">
-              <p className="text-sm text-muted-foreground">OS</p>
-              <p>{userAgent.os.name}</p>
-            </div>
-          ) : null}
-          {userAgent.browser.name ? (
-            <div>
-              <p className="text-sm text-muted-foreground">Browser</p>
-              <p>{userAgent.browser.name}</p>
-            </div>
-          ) : null}
-        </div>
-      </div>
-    );
-  } else if (status === "CLICKED") {
-    const _data = data as unknown as SesClick;
-    const userAgent = getUserAgent(_data.userAgent);
-
-    return (
-      <div className="w-full mt-4 flex flex-col gap-4  rounded-xl p-4 bg-muted/30">
-        <div className="flex  w-full ">
-          {userAgent.os.name ? (
-            <div className="w-1/2">
-              <p className="text-sm text-muted-foreground">OS </p>
-              <p>{userAgent.os.name}</p>
-            </div>
-          ) : null}
-          {userAgent.browser.name ? (
-            <div>
-              <p className="text-sm text-muted-foreground">Browser </p>
-              <p>{userAgent.browser.name}</p>
-            </div>
-          ) : null}
-        </div>
-        <div className="w-full">
-          <p className="text-sm text-muted-foreground">URL</p>
-          <p>{_data.link}</p>
-        </div>
+      <div className="flex flex-col gap-0.5">
+        {client ? <span>{client}</span> : null}
+        {status === "CLICKED" && _data.link ? (
+          <span className="break-all font-mono text-xs text-foreground/80">{_data.link}</span>
+        ) : null}
       </div>
     );
   } else if (status === "COMPLAINED") {
     const _errorData = data as unknown as SesComplaint;
-
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        <p>{getComplaintMessage(_errorData.complaintFeedbackType)}</p>
-      </div>
-    );
+    return <div>{getComplaintMessage(_errorData.complaintFeedbackType)}</div>;
   } else if (status === "CANCELLED") {
-    return <div>This scheduled email was cancelled</div>;
+    return <div>This scheduled email was cancelled.</div>;
   } else if (status === "SUPPRESSED") {
-    return (
-      <div>
-        This email was suppressed because this email is previously either
-        bounced or the recipient complained.
-      </div>
-    );
+    return <div>Not sent: the address is on the Exclusions list.</div>;
+  } else if (status === "QUEUED") {
+    return <div>Waiting to be sent.</div>;
   }
 
-  return <div className="w-full">{status}</div>;
+  return null;
 };
 
 const getErrorMessage = (data: SesBounce) => {
@@ -325,7 +367,8 @@ const getErrorMessage = (data: SesBounce) => {
   }
 };
 
-const getComplaintMessage = (errorType: string) => {
+const getComplaintMessage = (errorType: string | undefined) => {
+  if (!errorType) return undefined;
   return COMPLAINT_ERROR_MESSAGES[
     errorType as keyof typeof COMPLAINT_ERROR_MESSAGES
   ];
