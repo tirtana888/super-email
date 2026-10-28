@@ -1,8 +1,13 @@
 import { SuppressionReason } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { createTRPCRouter, teamProcedure } from "~/server/api/trpc";
+import { db } from "~/server/db";
+import { logger } from "~/server/logger/log";
 import { SuppressionService } from "~/server/service/suppression-service";
+
+export const MAX_SUPPRESSIONS_PER_REMOVAL = 100;
 
 export const suppressionRouter = createTRPCRouter({
   // Get suppression list for team with pagination
@@ -30,8 +35,29 @@ export const suppressionRouter = createTRPCRouter({
         sortOrder,
       });
 
+      const sourceIds = [
+        ...new Set(
+          result.suppressions
+            .map((suppression) => suppression.source)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      const sourceEmails = sourceIds.length
+        ? await db.email.findMany({
+            where: { id: { in: sourceIds }, teamId: ctx.team.id },
+            select: { id: true, subject: true },
+          })
+        : [];
+      const subjectById = new Map(sourceEmails.map((email) => [email.id, email.subject]));
+
       return {
-        suppressions: result.suppressions,
+        suppressions: result.suppressions.map((suppression) => ({
+          ...suppression,
+          sourceEmail:
+            suppression.source && subjectById.has(suppression.source)
+              ? { id: suppression.source, subject: subjectById.get(suppression.source) ?? "" }
+              : null,
+        })),
         pagination: {
           page,
           limit,
@@ -70,6 +96,66 @@ export const suppressionRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       await SuppressionService.removeSuppression(input.email, ctx.team.id);
+    }),
+
+  // Remove several addresses at once. Addresses that reported spam are only
+  // removed when the request confirms it, so the guard cannot be skipped by
+  // calling the API directly.
+  removeSuppressions: teamProcedure
+    .input(
+      z.object({
+        emails: z
+          .array(z.string().email())
+          .min(1)
+          .max(MAX_SUPPRESSIONS_PER_REMOVAL),
+        confirmComplaints: z.boolean().default(false),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const emails = [
+        ...new Set(input.emails.map((email) => email.toLowerCase().trim())),
+      ];
+      const existing = await db.suppressionList.findMany({
+        where: { teamId: ctx.team.id, email: { in: emails } },
+        select: { email: true, reason: true },
+      });
+      const complaints = existing.filter(
+        (row) => row.reason === SuppressionReason.COMPLAINT,
+      );
+
+      if (complaints.length > 0 && !input.confirmComplaints) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `${complaints.length} of these addresses reported your email as spam. Confirm before removing them.`,
+        });
+      }
+
+      const failed: string[] = [];
+      for (const row of existing) {
+        try {
+          await SuppressionService.removeSuppression(row.email, ctx.team.id);
+        } catch {
+          failed.push(row.email);
+        }
+      }
+
+      logger.info(
+        {
+          teamId: ctx.team.id,
+          userId: ctx.session.user.id,
+          requested: emails.length,
+          removed: existing.length - failed.length,
+          complaintsRemoved: complaints.filter((row) => !failed.includes(row.email)).length,
+          failed: failed.length,
+        },
+        "[suppression]: addresses removed from the exclusion list",
+      );
+
+      return {
+        removed: existing.length - failed.length,
+        failed,
+        notFound: emails.length - existing.length,
+      };
     }),
 
   // Bulk add suppressions
