@@ -189,9 +189,17 @@ export async function sendEmail(
   }
 
   if (templateId) {
-    const template = await db.template.findUnique({
-      where: { id: templateId },
+    // Only this team's templates can be used.
+    const template = await db.template.findFirst({
+      where: { id: templateId, teamId },
     });
+
+    if (!template) {
+      throw new UnsendApiError({
+        code: "NOT_FOUND",
+        message: `Template ${templateId} not found`,
+      });
+    }
 
     if (template) {
       const jsonContent = JSON.parse(template.content || "{}");
@@ -499,8 +507,9 @@ export async function sendBulkEmails(
 
     // Process template if specified
     if (templateId) {
-      const template = await db.template.findUnique({
-        where: { id: templateId },
+      // Only this team's templates can be used.
+      const template = await db.template.findFirst({
+        where: { id: templateId, teamId },
       });
 
       if (template) {

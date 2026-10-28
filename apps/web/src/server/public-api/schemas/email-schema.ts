@@ -39,6 +39,7 @@ export const emailSchema = z
     "Either subject or templateId must be provided."
   )
   .refine(
-    (data) => !!data.text || !!data.html,
-    "Either text or html content must be provided."
+    // A template supplies the content, so text or html is only needed without one.
+    (data) => !!data.text || !!data.html || !!data.templateId,
+    "Either text, html or templateId must be provided."
   );

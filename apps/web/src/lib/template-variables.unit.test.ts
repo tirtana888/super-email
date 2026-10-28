@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractTemplateVariables, templateSendExample } from "./template-variables";
+import {
+  extractTemplateVariables,
+  templateSendExample,
+  templateSendSnippet,
+} from "./template-variables";
 
 describe("extractTemplateVariables", () => {
   it("finds variables in the subject and the body, in order, without duplicates", () => {
@@ -41,5 +45,35 @@ describe("templateSendExample", () => {
       templateId: "tpl_1",
       variables: { otp: "<otp>", name: "<name>" },
     });
+  });
+});
+
+describe("templateSendSnippet", () => {
+  const input = { baseUrl: "https://app.f14.dev", templateId: "tpl_1", variables: ["otp"] };
+
+  it("posts to the emails endpoint with a bearer key in every language", () => {
+    for (const language of ["curl", "node", "python", "php"] as const) {
+      const code = templateSendSnippet(language, input);
+      expect(code).toContain("https://app.f14.dev/api/v1/emails");
+      expect(code).toContain("Bearer YOUR_API_KEY");
+      expect(code).toContain("tpl_1");
+      expect(code).toContain("otp");
+    }
+  });
+
+  it("produces a cURL body that is valid JSON", () => {
+    const code = templateSendSnippet("curl", input);
+    const body = code.slice(code.indexOf("-d '") + 4, code.lastIndexOf("'"));
+    expect(JSON.parse(body)).toEqual({
+      from: "you@your-domain.com",
+      to: "user@example.com",
+      templateId: "tpl_1",
+      variables: { otp: "<otp>" },
+    });
+  });
+
+  it("sends an empty variables object when the template has none", () => {
+    expect(templateSendSnippet("php", { ...input, variables: [] })).toContain("'variables' => (object) []");
+    expect(templateSendSnippet("python", { ...input, variables: [] })).toContain('"variables": {}');
   });
 });

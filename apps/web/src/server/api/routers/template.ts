@@ -21,6 +21,8 @@ export const templateRouter = createTRPCRouter({
       z.object({
         page: z.number().optional(),
         search: z.string().trim().max(200).optional().nullable(),
+        // The grid view shows a preview, so only it asks for the saved HTML.
+        withHtml: z.boolean().optional(),
       }),
     )
     .query(async ({ ctx: { db, team }, input }) => {
@@ -65,6 +67,7 @@ export const templateRouter = createTRPCRouter({
         templates: templates.map(({ html, ...template }) => ({
           ...template,
           variables: extractTemplateVariables(template.subject, html),
+          html: input.withHtml ? html : null,
         })),
         totalPage: Math.ceil(count / limit),
         total: count,
