@@ -71,7 +71,7 @@ export default function RemoveSuppressionDialog({
         </DialogHeader>
 
         {needsTyping ? (
-          <div className="flex flex-col gap-3 rounded-md border border-l-[3px] border-l-yellow bg-muted/40 px-3 py-2.5 text-[13px]">
+          <div className="flex flex-col gap-3 rounded-md border border-yellow/40 bg-yellow/5 px-3 py-2.5 text-[13px]">
             <p>
               {single
                 ? "This person marked one of your emails as spam."

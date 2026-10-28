@@ -1,20 +1,26 @@
 import "./globals.css";
 
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { ThemeProvider } from "@usesend/ui";
 import { Toaster } from "@usesend/ui/src/toaster";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import { Metadata } from "next";
 
-const geist = Geist({
+// IBM Plex: a corporate family with tabular figures that line up in tables.
+// The variables are read by --font-sans / --font-mono in packages/ui globals.css.
+const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
-  variable: "--font-sans",
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-sans",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
-  variable: "--font-mono",
+  weight: ["400", "500"],
+  variable: "--font-plex-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -32,7 +38,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="bg-sidebar-background">
       <body
-        className={`font-sans ${geist.variable} ${geistMono.variable} app bg-sidebar-background`}
+        className={`font-sans ${plexSans.variable} ${plexMono.variable} app bg-sidebar-background`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster />

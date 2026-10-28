@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "~/trpc/react";
+import { DISPLAY_TIME_ZONE_LABEL, formatDashboardTime } from "~/lib/format-time";
 import { Spinner } from "@usesend/ui/src/spinner";
 import { Input } from "@usesend/ui/src/input";
 import { Editor } from "@usesend/email-editor";
@@ -121,9 +122,14 @@ function TemplateEditor({
       <div className="mx-auto">
         <div className="mb-4 flex justify-between items-center w-full sm:w-[700px] mx-auto">
           <div className="flex items-center gap-3">
-            <Link href="/templates">
-              <ArrowLeft className="h-4 w-4" />
+            <Link
+              href="/templates"
+              className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Templates
             </Link>
+            <span className="text-muted-foreground">/</span>
             <Input
               type="text"
               value={name}
@@ -150,15 +156,17 @@ function TemplateEditor({
           </div>
 
           <div className="flex items-center gap-4 whitespace-nowrap">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              {isSaving ? (
-                <div className="h-2 w-2 bg-yellow rounded-full" />
-              ) : (
-                <div className="h-2 w-2 bg-green rounded-full" />
-              )}
-              {formatDistanceToNow(template.updatedAt) === "less than a minute"
-                ? "just now"
-                : `${formatDistanceToNow(template.updatedAt)} ago`}
+            <div
+              className="flex items-center gap-2 text-xs text-muted-foreground"
+              title={formatDistanceToNow(template.updatedAt, { addSuffix: true })}
+            >
+              <span
+                aria-hidden
+                className={`h-[7px] w-[7px] rounded-full ${isSaving ? "bg-transparent ring-[1.5px] ring-inset ring-gray" : "bg-green"}`}
+              />
+              {isSaving
+                ? "Saving..."
+                : `Saved ${formatDashboardTime(template.updatedAt, { seconds: false })} ${DISPLAY_TIME_ZONE_LABEL}`}
             </div>
           </div>
         </div>

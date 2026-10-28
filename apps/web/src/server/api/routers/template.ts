@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { extractTemplateVariables } from "~/lib/template-variables";
 import { TRPCError } from "@trpc/server";
 import { EmailRenderer } from "@usesend/email-editor/src/renderer";
 import { z } from "zod";
@@ -19,6 +20,7 @@ export const templateRouter = createTRPCRouter({
     .input(
       z.object({
         page: z.number().optional(),
+        search: z.string().trim().max(200).optional().nullable(),
       }),
     )
     .query(async ({ ctx: { db, team }, input }) => {
@@ -28,6 +30,15 @@ export const templateRouter = createTRPCRouter({
 
       const whereConditions: Prisma.TemplateFindManyArgs["where"] = {
         teamId: team.id,
+        ...(input.search
+          ? {
+              OR: [
+                { name: { contains: input.search, mode: "insensitive" } },
+                { subject: { contains: input.search, mode: "insensitive" } },
+                { id: input.search },
+              ],
+            }
+          : {}),
       };
 
       const countP = db.template.count({ where: whereConditions });
@@ -42,16 +53,22 @@ export const templateRouter = createTRPCRouter({
           updatedAt: true,
           html: true,
         },
-        orderBy: {
-          createdAt: "desc",
-        },
+        // Most recently edited first: the template someone is working on.
+        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
         skip: offset,
         take: limit,
       });
 
       const [templates, count] = await Promise.all([templatesP, countP]);
 
-      return { templates, totalPage: Math.ceil(count / limit) };
+      return {
+        templates: templates.map(({ html, ...template }) => ({
+          ...template,
+          variables: extractTemplateVariables(template.subject, html),
+        })),
+        totalPage: Math.ceil(count / limit),
+        total: count,
+      };
     }),
 
   createTemplate: teamProcedure

@@ -237,14 +237,22 @@ const ProblemCallout = ({
       "Not sent because this address is on the Exclusions list after an earlier bounce or complaint.";
   }
 
-  const tone =
-    status === "DELIVERY_DELAYED" || status === "SUPPRESSED"
-      ? "border-l-yellow"
-      : "border-l-red";
+  const warning = status === "DELIVERY_DELAYED" || status === "SUPPRESSED";
 
+  // A thin tinted border and a status dot; no accent stripe.
   return (
-    <div className={`rounded-md border border-l-[3px] ${tone} bg-muted/40 px-3 py-2.5 text-[13px]`}>
-      <div className="font-medium text-foreground">{title}</div>
+    <div
+      className={`rounded-md border px-3 py-2.5 text-[13px] ${
+        warning ? "border-yellow/40 bg-yellow/5" : "border-red/40 bg-red/5"
+      }`}
+    >
+      <div className="flex items-center gap-2 font-medium text-foreground">
+        <span
+          aria-hidden
+          className={`h-[7px] w-[7px] shrink-0 rounded-full ${warning ? "bg-yellow" : "bg-red"}`}
+        />
+        {title}
+      </div>
       {message ? <p className="mt-0.5 text-muted-foreground">{message}</p> : null}
       {detail ? (
         <p className="mt-2 break-words font-mono text-xs text-foreground/80">{detail}</p>
